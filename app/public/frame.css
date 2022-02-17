@@ -1,0 +1,6 @@
+.frame-block {
+    border: 1px solid black;
+    padding: 12px;
+    color: #444;
+    background-color: white;
+}

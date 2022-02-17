@@ -1,0 +1,46 @@
+{
+    "manifest_version": 3,
+    "version": "0.0.1",
+    "short_name": "MetaFrame",
+    "name": "MetaFrame",
+    "description": "Stuff.",
+    "action": {
+        "default_icon": {
+            "32": "img/icon-32.png"
+        },
+        "default_title": "MetaFrame"
+    },
+    "options_page": "options.html",
+    "background": {
+        "service_worker":  "background.bundle.js"
+    },
+    "content_scripts": [
+        {
+        "matches": [
+            "<all_urls>"
+        ],
+        "js": [
+            "content.bundle.js"
+        ],
+        "css" : [
+            "frame.css"
+        ]
+    }
+    ],
+    "icons": {
+    },
+    "permissions" : ["tabs", "storage", "contextMenus", "unlimitedStorage"],
+    "optional_permissions": [],
+    "host_permissions": ["http://*/", "https://*/"],
+    "content_security_policy": {
+        "extension_pages": "script-src 'self'; object-src 'self'; connect-src "},
+    "web_accessible_resources": [{
+        "resources": [
+            "iframe.html"
+        ],
+        "matches": [
+            "http://*/*","https://*/*"
+        ]
+    }]    
+}
+ 

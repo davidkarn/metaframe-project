@@ -1,0 +1,109 @@
+{
+  "version": "0.1.0",
+  "name": "mysolanaapp",
+  "instructions": [
+    {
+      "name": "postComment",
+      "accounts": [
+        {
+          "name": "comment",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
+          "name": "author",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": [
+        {
+          "name": "username",
+          "type": "string"
+        },
+        {
+          "name": "message",
+          "type": "string"
+        },
+        {
+          "name": "site",
+          "type": "string"
+        },
+        {
+          "name": "path",
+          "type": "string"
+        },
+        {
+          "name": "nodeHash",
+          "type": "string"
+        },
+        {
+          "name": "selection",
+          "type": "string"
+        }
+      ]
+    }
+  ],
+  "accounts": [
+    {
+      "name": "Comment",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "site",
+            "type": "publicKey"
+          },
+          {
+            "name": "path",
+            "type": "publicKey"
+          },
+          {
+            "name": "nodeHash",
+            "type": "publicKey"
+          },
+          {
+            "name": "author",
+            "type": "publicKey"
+          },
+          {
+            "name": "timestamp",
+            "type": "i64"
+          },
+          {
+            "name": "username",
+            "type": "string"
+          },
+          {
+            "name": "message",
+            "type": "string"
+          },
+          {
+            "name": "selection",
+            "type": "string"
+          }
+        ]
+      }
+    }
+  ],
+  "errors": [
+    {
+      "code": 6000,
+      "name": "UsernameTooLong",
+      "msg": "The provided username should be 48 characters long maximum."
+    },
+    {
+      "code": 6001,
+      "name": "CommentTooLong",
+      "msg": "The provided comment should be 1024 characters long maximum."
+    }
+  ],
+  "metadata": {
+    "address": "6FFmFrZMQxH3DB2VGwVaAR13tEgvmfyHVwhMVooot9VG"
+  }
+}
