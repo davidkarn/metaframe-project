@@ -57,15 +57,15 @@
         "fields": [
           {
             "name": "site",
-            "type": "publicKey"
+            "type": "string"
           },
           {
             "name": "path",
-            "type": "publicKey"
+            "type": "string"
           },
           {
             "name": "nodeHash",
-            "type": "publicKey"
+            "type": "string"
           },
           {
             "name": "author",

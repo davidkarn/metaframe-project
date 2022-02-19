@@ -1,8 +1,9 @@
 import {useState, useEffect}     from 'react'
 import {Connection, PublicKey}   from '@solana/web3.js'
 import {Program, Provider, web3} from '@project-serum/anchor'
-import React                     from 'react';
-import ReactDOM                  from 'react-dom';
+import React                     from 'react'
+import ReactDOM                  from 'react-dom'
+import md5                       from 'js-md5'
 import {HashRouter,
         Route,
         Routes}                  from "react-router-dom"
@@ -20,9 +21,7 @@ const wallets          = [new PhantomWalletAdapter()]
 const {SystemProgram,
        Keypair}        = web3
 const opts             = {preflightCommitment: "processed"}
-const programID        = new PublicKey(idl.metadata.address);
-
-
+const programID        = new PublicKey(idl.metadata.address)
 
 const App = () => {
     const [value, setValue] = useState(null)
@@ -60,11 +59,11 @@ const App = () => {
                 const result = program.rpc.postComment(
                     message.name,
                     message.message,
-                    message.site,
-                    message.path,
+                    md5(message.site),
+                    md5(message.path),
+                    md5(JSON.stringify(message.node)),
                     JSON.stringify(message.node),
-                    JSON.stringify(message.node),
-                    {accounts: {author:        wallet.publicKey,
+                    {accounts: {author:        provider.wallet.publicKey,
                                 comment:       comment.publicKey,
                                 systemProgram: web3.SystemProgram.programId},
                      signers: [comment]})
@@ -94,7 +93,7 @@ const AppWithProvider = () => {
                     __(App)))) }
 
 
-ReactDOM.render(
+ReactDOM.render( 
     __(React.StrictMode, {},
        __(AppWithProvider)),
     document.getElementById('root'))

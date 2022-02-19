@@ -34,9 +34,9 @@ chrome.runtime.onMessage.addListener((message, sender) => {
             {command: 'receive_node',
              id:       message.id,
              node:     nodes[message.id]})
-
+ 
     else if (message.command == 'send_to_sol') {
-        chrome.tabs.query({url: 'https://metaframe.io:8081/connector.html'},
+        chrome.tabs.query({url: 'https://metaframe.io:8080/connector.html'},
 		                      (result) => {
                               console.log('sending', message.data, result)
                               chrome.tabs.sendMessage(
