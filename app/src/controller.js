@@ -1,6 +1,7 @@
 import {useState, useEffect}     from 'react'
 import {Connection, PublicKey}   from '@solana/web3.js'
 import {Program, Provider, web3} from '@project-serum/anchor'
+import bs58                      from 'bs58'
 import React                     from 'react'
 import ReactDOM                  from 'react-dom'
 import md5                       from 'js-md5'
@@ -45,23 +46,64 @@ const App = () => {
         window.top.postMessage({command: forward_to_worker,
                                 message: message}) }
     
+    const send_to_backend = (message) => {
+        window.top.postMessage({command: 'forward_to_backend',
+                                data:     message}) }
+    
     const init_app = () => {
         console.log('initing app')
+
+        const fetch_comments = (filters) => {
+            console.log('fetching', filters)
+            return program.account.comment.all(filters) }
+
+        window.fetch_comments = fetch_comments
+        window.md5 = md5
+        
         const message_listener = (_message) => {
             const message = _message.data
             console.log('got a message', message.command, message)
-            if (message.command == 'post_comment') {
+            
+            if (message.command == 'request_comments') {
+                
+                fetch_comments([
+                    {memcmp: {
+                        offset: 8 + 4,
+                        bytes: bs58.encode(Buffer.from(md5(message.site)
+                                                       /*+ md5(message.path)*/))}}])
+
+                    .then(comments => {
+                        console.log('fetched', comments)
+                        send_to_backend({command:  'forward_comments',
+                                         comments:  comments,
+                                         site:      message.site,
+                                         path:      message.path,
+                                         tab_id:    message.tab_id}) }) }
+                    
+            else if (message.command == 'post_comment') {
                 console.log('posting', message)
                 const comment            = web3.Keypair.generate()
 
                 console.log({wallet, comment, message, x})
-                
+                console.log('site', message.site, md5(message.site))
+                console.log(message.name,
+                    message.message,
+                    md5(message.site),
+                    md5(message.path),
+                    md5(JSON.stringify(message.node.nodes[message.node.nodes.length - 1])),
+//                    md5(JSON.stringify(message.node.root_node)),
+                    JSON.stringify(message.node),
+                    {accounts: {author:        provider.wallet.publicKey,
+                                comment:       comment.publicKey,
+                                systemProgram: web3.SystemProgram.programId},
+                     signers: [comment]})
                 const result = program.rpc.postComment(
                     message.name,
                     message.message,
                     md5(message.site),
                     md5(message.path),
-                    md5(JSON.stringify(message.node)),
+                    md5(JSON.stringify(message.node.nodes[message.node.nodes.length - 1])),
+//                    md5(JSON.stringify(message.node.root_node)),
                     JSON.stringify(message.node),
                     {accounts: {author:        provider.wallet.publicKey,
                                 comment:       comment.publicKey,

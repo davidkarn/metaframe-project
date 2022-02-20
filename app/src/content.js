@@ -1,4 +1,7 @@
 const app_url = 'https://metaframe.io:8081'
+import {normalize_site,
+        normalize_site_path,
+        query_parameters}        from './utils.js'
 
 //chrome.runtime.sendMessage({ command: "init-page" });
 function member(ar, value) {
@@ -301,72 +304,14 @@ function insert_comment_block(element, comment_block, comment) {
     const wrapper = comments_wrapper_for_block(element)
     wrapper.appendChild(comment_block) }
     
-const test_comment = {
-    id: 'at30tghaofheelsf',
-    username: "David Karn",
-    userpic: '',
-    message: "eenie meenie minie moe catch a tiger by his toe if he hollers make him pay fifty dollars every day",
-    time: 1644542852114,
-    selection: {
-        "nodes": [
-            {
-                "text": "I’ve been hacking/building on Ethereum since 2015 and have largely remained focused on EVM-based blockchains since. As a result, I have acquired a reasonably good handle on how Ethereum works up and down the stack. I also built a hardware wallet (Lattice), which is designed to enhance the user experience of transacting on smart contract platforms. Until recently, EVM-based chains have held nearly 100% of this market share.",
-                "tag": "P",
-                "id": "5b8e",
-                "classNames": [
-                    ""
-                ],
-                "parent": {
-                    "tag": "SECTION",
-                    "id": "",
-                    "classes": [
-                        ""
-                    ]
-                }
-            },
-            {
-                "text": "Solana started growing in usage earlier this year so I took a look at their docs and realized how different it was from Ethereum. It is a completely different system with an entirely different set of tradeoffs. Even though I am a blockchain boomer I have to admit I found it intriguing. I’ve finally had some time to dig in and learn a bit more about how Solana works and I decided that studying a transaction in depth would be the best way to start, so I set off to do that and recorded my thoughts and analysis here.",
-                "tag": "P",
-                "id": "44be",
-                "classNames": [
-                    ""
-                ],
-                "parent": {
-                    "tag": "SECTION",
-                    "id": "",
-                    "classes": [
-                        ""
-                    ]
-                }
-            }
-        ],
-        "root_node": {
-            "text": "An Ethereum developer (sort of) learns how Solana transactions work.\n\nI’ve been hacking/building on Ethereum since 2015 and have largely remained focused on EVM-based blockchains since. As a result, I have acquired a reasonably good handle on how Ethereum works up and down the stack. I also built a hardware wallet (Lattice), which is designed to enhance the user experience of transacting on smart contract platforms. Until recently, EVM-based chains have held nearly 100% of this market share.\n\nSolana started growing in usage earlier this year so I took a look at their docs and realized how different it was from Ethereum. It is a completely different system with an entirely different set of tradeoffs. Even though I am a blockchain boomer I have to admit I found it intriguing. I’ve finally had some time to dig in and learn a bit more about how Solana works and I decided that studying a transaction in depth would be the best way to start, so I set off to do that and recorded my thoughts and analysis here.\n\nNOTE: I’m definitely not a Solana expert so some things may be wrong — please let me know if that is the case and I will correct the article.",
-            "tag": "SECTION",
-            "id": "",
-            "classNames": [
-                ""
-            ],
-            "parent": {
-                "tag": "SECTION",
-                "id": "",
-                "classes": [
-                    ""
-                ]
-            }
-        },
-        "text": "cting on smart contract platforms. Until recently, EVM-based chains have held nearly 100% of this market share.\nSolana started growing in usage earlier this year so I took a look at their docs and realized how different it was fro"
-    },
-    url: "https://medium.com/@asmiller1989/solana-transactions-in-depth-1f7f7fe06ac2",
-    domain: "medium.com"
-}
-
-const tests = [test_comment]
+const selections = {}
 
 function open_new_comment_popup(selection) {
-    const id = "id" + (Math.random() * 10000000).toString().slice(2)
+    const id        = "id" + (Math.random() * 10000000).toString().slice(2)
+    selections[id]  = selection
 
     chrome.runtime.sendMessage({command:  "save_node",
+                                href:      window.top.location.href,
                                 id:        id,
                                 selection: selection})
 
@@ -385,36 +330,42 @@ function open_new_comment_popup(selection) {
 
     document.body.appendChild(node) }
 
+function request_comments() {
+    const site          = normalize_site(window.location.href)
+    const path          = normalize_site_path(window.location.href)
+    const blocks        = find_available_blocks(document.body)
+
+    console.log('requesting', site, path, blocks)
+
+    chrome.runtime.sendMessage({
+        command: 'send_to_sol', 
+        data: {command: 'request_comments',
+               site,
+               path,
+               blocks}}) }
+
 document.addEventListener('contextmenu', (e) => {
     console.log('clicked', e)
     last_right_clicked = e.target })
 
-window.addEventListener('message', (message, sender) => {
-    console.log('windowevent', message, sender);
-    if (message.data.forward_to_backend)
-        chrome.runtime.sendMessage(message.data)
-
-    else
-        to_array(document
-                 .querySelectorAll('iframe'))
-        .map(iframe => {
-            console.log({iframe, message}, iframe.className)
-            if (iframe.className.match('metaframe'))
-                iframe.contentWindow.postMessage(message.data) })})
+window.top.addEventListener('message', (message, sender) => {
+    console.log('windowevent', message.data.command, message.data, sender);
+    if (message.data.forward_to_backend || message.data.command == 'forward_to_backend')
+        chrome.runtime.sendMessage(message.data.data) })
 
 chrome.runtime.onMessage.addListener( (message, sender) => {
-    console.log({message}, message.command)
     switch (message.command) {
     case "comment-on-selection":
         open_new_comment_popup(get_selection_signature(window.getSelection()))
-        console.log('1')
-        console.log(get_selection_signature(window.getSelection()))
-        console.log(find_available_blocks(document))
+        break
+
+    case "receive_comments":
+        console.log('reccomments', {message})
         break
 
     case "receive_node":
         document.getElementById(message.id).contentWindow.postMessage(message)
-        break;
+        break
         
     case "link-phantom":
         break
@@ -424,6 +375,11 @@ chrome.runtime.onMessage.addListener( (message, sender) => {
         window.top.postMessage(message.data)
     }
 })
-      
-      
 
+if (document.readyState == "complete"
+    || document.readyState == "interactive")
+    request_comments()
+
+else 
+    document.addEventListener('DOMContentLoaded', () => {
+        request_comments() })
