@@ -21,14 +21,18 @@ chrome.contextMenus.create(
 
 chrome.contextMenus.onClicked.addListener(menu_item_clicked)
 
-const nodes = {}
-const hrefs = {}
+const nodes     = {}
+const hrefs     = {}
+const comments  = {}
 chrome.runtime.onMessage.addListener((message, sender) => {
     console.log('gotmessage', message, sender, nodes)
 
     if (message.command == 'save_node') {
         hrefs[message.id] = message.href
         nodes[message.id] = message.selection }
+
+    else if (message.command == 'save_comment') {
+        comments[message.id] = message.comment }
 
     else if (message.command == 'send_node')
         chrome.tabs.sendMessage(
@@ -37,7 +41,14 @@ chrome.runtime.onMessage.addListener((message, sender) => {
              id:       message.id,
              href:     hrefs[message.id],
              node:     nodes[message.id]})
-  
+
+    else if (message.command == 'send_comment')
+        chrome.tabs.sendMessage(
+            sender.tab.id,
+            {command: 'receive_comment',
+             id:       message.id,
+             comment:  comments[message.id]})
+
     else if (message.command == 'forward_comments')
         chrome.tabs.sendMessage(
             message.tab_id,

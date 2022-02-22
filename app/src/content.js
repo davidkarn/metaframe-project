@@ -232,20 +232,17 @@ function find_el_from_definition(definition) {
     return null }
 
 function render_comment(comment) {
-    const node             = document.createElement('div')
-    node.id                = comment.id
-    node.className         = 'metaframe-comment'
+    const id            = "comment-" + comment.id
+    const node          = document.createElement("iframe");
 
-    const name_node        = document.createElement('div')
-    name_node.className    = 'metaframe-byline'
-    name_node.innerText    = comment.username
-
-    const comment_node     = document.createElement('div')
-    comment_node.className = 'metaframe-comment-body'
-    comment_node.innerText = comment.message
-
-    node.appendChild(name_node)
-    node.appendChild(comment_node)
+    chrome.runtime.sendMessage({command:  "save_comment",
+                                id:        comment.id,
+                                comment:   comment})
+    
+    node.src            = chrome.runtime.getURL('/iframe.html#/render-comment?'
+                                                + 'id=' + comment.id)
+    node.name           = comment.id
+    node.className      = 'metaframe-comment-iframe metaframe-iframe'
     
     return node }
 
@@ -457,9 +454,21 @@ document.addEventListener('contextmenu', (e) => {
     last_right_clicked = e.target })
 
 window.top.addEventListener('message', (message, sender) => {
+    console.log('topmessage', message.data.command, message, sender)
     if (message.data.forward_to_backend || message.data.command == 'forward_to_backend')
-        chrome.runtime.sendMessage(message.data.data) })
+        chrome.runtime.sendMessage(message.data.data)
 
+    else if (message.data.command == 'send_comment') {
+        console.log('sendcomment', message.data.id, document.getElementById(message.id))
+        
+        document
+            .getElementById(message.id)
+            .contentWindow
+            .postMessage({command: 'receive_comment',
+                          id:       message.id,
+                          comment:  comments[message.id.replace('comment-', '')]}) }})
+
+const comments = {}
 chrome.runtime.onMessage.addListener( (message, sender) => {
     switch (message.command) {
     case "comment-on-selection":
@@ -471,12 +480,15 @@ chrome.runtime.onMessage.addListener( (message, sender) => {
         console.log('reccomments', {message})
         
         message.comments.slice(0,1).map((object) => {
-            const comment = object.account
-            draw_comment({username:  comment.username,
-                          message:   comment.message,
-                          node_hash: comment.nodeHash,
-                          selection: JSON.parse(comment.selection),
-                          id:        bs58.encode(object.publicKey._bn.words)}) })
+            const _comment = object.account
+            const comment  = {username:  _comment.username,
+                              message:   _comment.message,
+                              node_hash: _comment.nodeHash,
+                              selection: JSON.parse(_comment.selection),
+                              id:        bs58.encode(object.publicKey._bn.words)}
+            
+            comments[comment.id] = comment
+            draw_comment(comment) })
         break
 
     case "receive_node":
