@@ -5,6 +5,7 @@ import idl                       from '../idl.json'
 import __                        from '../jsml.js'
 import {normalize_site,
         normalize_site_path,
+        clean_text,
         query_parameters}        from '../utils.js'
 
 
@@ -27,9 +28,6 @@ const LeaveComment = ({wallet, provider, program}) => {
                                         id:        iframe_id}) },
         [])
 
-    const clean_text = (text) => {
-        return text.replace(/[^bcdfghjklmnpqrstvwxyz]+/g, '') }
-    
     const clean_node = (node) => {
         if (node.nodes.length == 0)
             node.nodes = [node.root_node]

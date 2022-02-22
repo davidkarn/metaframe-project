@@ -25,3 +25,7 @@ export function query_parameters() {
             params[param[0]] = decodeURIComponent(param[1] || "") })
 
     return params }
+
+export function clean_text(text) {
+    return text.replace(/[^bcdfghjklmnpqrstvwxyz]+/g, '') }
+    

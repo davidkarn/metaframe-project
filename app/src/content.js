@@ -1,6 +1,7 @@
-const app_url = 'https://metaframe.io:8081'
+import                           bs58 from 'bs58'
 import {normalize_site,
         normalize_site_path,
+        clean_text,
         query_parameters}        from './utils.js'
 
 //chrome.runtime.sendMessage({ command: "init-page" });
@@ -203,10 +204,16 @@ function class_names(el) {
 let last_right_clicked = false
 
 function draw_comment(comment) {
+    console.log({comment})
+
     const el             = find_el_from_definition(last(comment.selection.nodes))
     const comment_block  = render_comment(comment)
-    
-    insert_comment_block(el, comment_block, comment) }
+    console.log({el})
+    insert_comment_block(el, comment_block, comment)
+
+    highlight_selection(comment.selection.text,
+                        el,
+                        comment.id)}
 
 function find_el_from_definition(definition) {
     let candidates = document.querySelectorAll(
@@ -219,7 +226,7 @@ function find_el_from_definition(definition) {
     for (var i in candidates) {
         let candidate = candidates[i]
         
-        if ((candidate.innerText || '').trim() == definition.text)
+        if (clean_text(candidate.innerText || '') == definition.text)
             return candidate }
 
     return null }
@@ -242,6 +249,104 @@ function render_comment(comment) {
     
     return node }
 
+function highlight_selection(string, el, id) {
+    const positions  = find_selection(string, el)
+    let position     = 0
+    let childNodes   = to_array(el.childNodes)
+
+    while (position < positions.end) {
+        let node = childNodes[0]
+        let text = node.textContent
+        
+        if (text.length + position < positions.start) {
+            childNodes.shift()
+            position += text.length
+            
+            if (childNodes.length == 0)
+                break }
+
+        else {
+            add_selection(node,
+                          Math.max(positions.start - position, 0),
+                          Math.min(positions.end - position, text.length),
+                          id)
+            position += text.length }}}
+
+function add_selection(node, start, end, id) {    
+    if (node instanceof Text) {
+        const node_text       = node.textContent
+        let outer_span        = document.createElement('span')
+        outer_span.className  = 'mf-hl-outerspan selection-' + id
+        let inner_span        = document.createElement('span')
+        inner_span.className  = 'mf-hl-selection selection-' + id
+
+        outer_span.appendChild(
+            document.createTextNode(node_text.slice(0, start)))
+        inner_span.innerHTML = node_text.slice(start, end)
+        outer_span.appendChild(inner_span)
+        outer_span.appendChild(
+            document.createTextNode(node_text.slice(end)))
+        
+        inner_span.style.backgroundColor = 'red'
+
+        node.parentElement.insertBefore(outer_span, node.nextSibling)
+        node.parentElement.removeChild(node) }
+
+    else {
+        let parent_node       = node.parentElement
+        let next_node         = node.nextSibling
+        let inner_span        = document.createElement('span')
+        inner_span.className  = 'mf-hl-selection selection-' + id
+        
+        parent_node.removeChild(node)
+        inner_span.appendChild(node)
+        parent_node.insertBefore(node, next_node) }}
+        
+function find_selection(string, el) {
+    const text  = el.innerText
+
+    let start   = text.search(string)
+    
+    if (start > 0) 
+        return {start: start,
+                end:   start + string.length}
+
+    else {
+        let right_start   = 0
+        let right_end     = 0
+        let right_length  = 1
+        let found
+
+        do {
+            found = text.search(string.slice(0 - right_length))
+            if (found > 0) {
+                right_start = found
+                right_end   = found + right_length
+                right_length++ }}
+        
+        while (found > 0)
+
+        let left_start  = 0
+        let left_end    = 0
+        let left_length = 1
+
+        do {
+            found = text.search(string.slice(0 - left_length))
+            if (found > 0) {
+                left_start = found
+                left_end   = found + left_length
+                left_length++ }}
+        
+        while (found > 0)
+
+        if (left_length > right_length)
+            return {start: left_start,
+                    end:   left_end}
+
+        else
+            return {start: right_start,
+                    end:   right_end}}}
+
 function get_sub_text_nodes(el) {
     if (el instanceof Text)
         return el
@@ -255,8 +360,10 @@ function get_sub_text_nodes(el) {
         .reduce((a, b) => a.concat(b), []) }
 
 function get_text_bounds(el) {
-    const rect  = el.getBoundingClientRect();
-    const nodes = get_sub_text_nodes(el)
+    const rect      = el.getBoundingClientRect();
+    const nodes     = get_sub_text_nodes(el)
+    const root_top  = Math.round(window.pageYOffset - document.body.clientTop)
+    const root_left = Math.round(window.pageXOffset - document.body.clientLeft)
 
     if (nodes.length == 0)
         return rect
@@ -276,14 +383,15 @@ function get_text_bounds(el) {
                 
                 .reduce(
                     (a, b) => {
-                        return {left:   Math.min(a.left, b.left),
-                                right:  Math.max(a.right, b.right),
-                                top:    Math.min(a.top, b.top),
-                                bottom: Math.max(a.bottom, b.bottom)} },
-                    {left:   rect.right,
-                     right:  rect.left,
-                     top:    rect.bottom,
-                     bottom: rect.top})) }
+                        console.log({root_top, root_left, a, b})
+                        return {left:   Math.min(a.left,   root_left + b.left),
+                                right:  Math.max(a.right,  root_left + b.right),
+                                top:    Math.min(a.top,    root_top + b.top),
+                                bottom: Math.max(a.bottom, root_top + b.bottom)} },
+                    {left:   rect.right + root_left,
+                     right:  rect.left + root_left,
+                     top:    rect.bottom + root_top,
+                     bottom: rect.top + root_top})) }
 
 const comments_wrapper_for_block = memoize((el) => {
     const wrapper   = document.createElement('div')
@@ -349,18 +457,26 @@ document.addEventListener('contextmenu', (e) => {
     last_right_clicked = e.target })
 
 window.top.addEventListener('message', (message, sender) => {
-    console.log('windowevent', message.data.command, message.data, sender);
     if (message.data.forward_to_backend || message.data.command == 'forward_to_backend')
         chrome.runtime.sendMessage(message.data.data) })
 
 chrome.runtime.onMessage.addListener( (message, sender) => {
     switch (message.command) {
     case "comment-on-selection":
+        console.log(get_selection_signature(window.getSelection()))
         open_new_comment_popup(get_selection_signature(window.getSelection()))
         break
 
     case "receive_comments":
         console.log('reccomments', {message})
+        
+        message.comments.slice(0,1).map((object) => {
+            const comment = object.account
+            draw_comment({username:  comment.username,
+                          message:   comment.message,
+                          node_hash: comment.nodeHash,
+                          selection: JSON.parse(comment.selection),
+                          id:        bs58.encode(object.publicKey._bn.words)}) })
         break
 
     case "receive_node":
