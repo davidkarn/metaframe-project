@@ -3,6 +3,40 @@
   "name": "mysolanaapp",
   "instructions": [
     {
+      "name": "postReply",
+      "accounts": [
+        {
+          "name": "reply",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
+          "name": "author",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": [
+        {
+          "name": "username",
+          "type": "string"
+        },
+        {
+          "name": "message",
+          "type": "string"
+        },
+        {
+          "name": "toComment",
+          "type": "string"
+        }
+      ]
+    },
+    {
       "name": "postComment",
       "accounts": [
         {
@@ -50,6 +84,34 @@
     }
   ],
   "accounts": [
+    {
+      "name": "Reply",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "toComment",
+            "type": "string"
+          },
+          {
+            "name": "author",
+            "type": "publicKey"
+          },
+          {
+            "name": "timestamp",
+            "type": "i64"
+          },
+          {
+            "name": "username",
+            "type": "string"
+          },
+          {
+            "name": "message",
+            "type": "string"
+          }
+        ]
+      }
+    },
     {
       "name": "Comment",
       "type": {

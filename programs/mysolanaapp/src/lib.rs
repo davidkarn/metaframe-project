@@ -7,6 +7,18 @@ declare_id!("6FFmFrZMQxH3DB2VGwVaAR13tEgvmfyHVwhMVooot9VG");
 mod mysolanaapp {
     use super::*;
 
+    pub fn post_reply(ctx: Context<PostReply>, username: String, message: String, to_comment: String) -> ProgramResult {
+        let reply: &mut Account<Reply>     = &mut ctx.accounts.reply;
+        let author: &Signer                = &ctx.accounts.author;
+        let clock: Clock                   = Clock::get().unwrap();
+
+        reply.author           = *author.key;
+        reply.timestamp        = clock.unix_timestamp;
+        reply.username         = username;
+        reply.message          = message;
+
+        Ok(()) }
+
     pub fn post_comment(ctx: Context<PostComment>, username: String, message: String, site: String, path: String, node_hash: String/*, root_node_hash: String*/, selection: String) -> ProgramResult {
         let comment: &mut Account<Comment> = &mut ctx.accounts.comment;
         let author: &Signer                = &ctx.accounts.author;
@@ -30,6 +42,15 @@ mod mysolanaapp {
         Ok(()) }}
 
 #[derive(Accounts)]
+pub struct PostReply<'info> {
+    #[account(init, payer = author, space = Reply::LEN)]
+    pub reply: Account<'info, Reply>,
+    #[account(mut)]
+    pub author: Signer<'info>,
+    #[account(address = system_program::ID)]    
+    pub system_program: AccountInfo<'info>, }
+
+#[derive(Accounts)]
 pub struct PostComment<'info> {
     #[account(init, payer = author, space = Comment::LEN)]
     pub comment: Account<'info, Comment>,
@@ -37,6 +58,14 @@ pub struct PostComment<'info> {
     pub author: Signer<'info>,
     #[account(address = system_program::ID)]    
     pub system_program: AccountInfo<'info>, }
+
+#[account]
+pub struct Reply {
+    pub to_comment:     String,
+    pub author:         Pubkey,
+    pub timestamp:      i64,
+    pub username:       String,
+    pub message:        String, }
 
 // An account that goes inside a transaction instruction
 #[account]
@@ -58,6 +87,9 @@ const TIMESTAMP_LENGTH:     usize = 8;
 const STRING_LENGTH_PREFIX: usize = 4; // Stores the size of the string.
 const MAX_USERNAME_LENGTH:  usize = 48 * 4; // 48 chars max.
 const MAX_MESSAGE_LENGTH:   usize = 1024 * 4; // 1024 chars max.
+
+impl Reply {
+    const LEN: usize = 2048; }
 
 impl Comment {
     const LEN: usize = 10240; }

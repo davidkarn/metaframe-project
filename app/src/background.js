@@ -49,6 +49,11 @@ chrome.runtime.onMessage.addListener((message, sender) => {
              id:       message.id,
              comment:  comments[message.id]})
 
+    else if (message.command == 'send-to-tab')
+        chrome.tabs.sendMessage(
+            message.tab || sender.tab.id,
+            message.data)
+    
     else if (message.command == 'forward_comments')
         chrome.tabs.sendMessage(
             message.tab_id,

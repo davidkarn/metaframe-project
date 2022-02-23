@@ -238,7 +238,8 @@ function render_comment(comment) {
     chrome.runtime.sendMessage({command:  "save_comment",
                                 id:        comment.id,
                                 comment:   comment})
-    
+
+    node.id             = id
     node.src            = chrome.runtime.getURL('/iframe.html#/render-comment?'
                                                 + 'id=' + comment.id)
     node.name           = comment.id
@@ -447,6 +448,26 @@ function request_comments() {
                path,
                blocks}}) }
 
+function expand_window(iframe) {
+    const wrapper                = document.createElement("div")
+    wrapper.style.position       = 'fixed'
+    wrapper.style.background     = 'rgba(100,100,100,0.1)'
+    wrapper.style.backdropFilter = 'blur(8px)'
+    wrapper.style.top            = '0'
+    wrapper.style.left           = '0'
+    wrapper.style.right          = '0'
+    wrapper.style.bottom         = '0'
+    wrapper.style.zIndex         = 10000
+    iframe.style.position        = 'fixed'
+    iframe.style.top             = '10vh'
+    iframe.style.left            = '10vw'
+    iframe.style.right           = '10vw'
+    iframe.style.bottom          = '10vh'
+    iframe.style.width           = '80vw'
+    iframe.style.height          = '80vh'
+    iframe.style.zIndex          = 100000
+    document.body.appendChild(wrapper) }
+
 document.addEventListener('contextmenu', (e) => {
     console.log('clicked', e)
     last_right_clicked = e.target })
@@ -474,6 +495,10 @@ chrome.runtime.onMessage.addListener( (message, sender) => {
         open_new_comment_popup(get_selection_signature(window.getSelection()))
         break
 
+    case "expand-comment":
+        expand_window(document.getElementById(message.id))
+        break
+        
     case "receive_comments":
         console.log('reccomments', {message})
         

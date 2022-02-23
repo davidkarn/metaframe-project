@@ -79,24 +79,22 @@ const App = () => {
                                          site:      message.site,
                                          path:      message.path,
                                          tab_id:    message.tab_id}) }) }
-                    
+
+            else if (message.command == 'post_reply') {
+                const reply  = web3.Keypair.generate()
+
+                const result = program.rpc.postReply(
+                    message.username,
+                    message.message,
+                    message.to_comment,
+                    {accounts: {author:        provider.wallet.publicKey,
+                                reply:         reply.publicKey,
+                                systemProgram: web3.SystemProgram.programId},
+                     signers: [reply]}) }
+            
             else if (message.command == 'post_comment') {
-                console.log('posting', message)
                 const comment            = web3.Keypair.generate()
 
-                console.log({wallet, comment, message, x})
-                console.log('site', message.site, md5(message.site))
-                console.log(message.name,
-                    message.message,
-                    md5(message.site),
-                    md5(message.path),
-                    md5(JSON.stringify(message.node.nodes[message.node.nodes.length - 1])),
-//                    md5(JSON.stringify(message.node.root_node)),
-                    JSON.stringify(message.node),
-                    {accounts: {author:        provider.wallet.publicKey,
-                                comment:       comment.publicKey,
-                                systemProgram: web3.SystemProgram.programId},
-                     signers: [comment]})
                 const result = program.rpc.postComment(
                     message.name,
                     message.message,
