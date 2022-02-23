@@ -284,8 +284,6 @@ function add_selection(node, start, end, id) {
         outer_span.appendChild(
             document.createTextNode(node_text.slice(end)))
         
-        inner_span.style.backgroundColor = 'red'
-
         node.parentElement.insertBefore(outer_span, node.nextSibling)
         node.parentElement.removeChild(node) }
 

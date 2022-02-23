@@ -36,7 +36,10 @@
         "extension_pages": "script-src 'self'; object-src 'self'; connect-src "},
     "web_accessible_resources": [{
         "resources": [
-            "iframe.html"
+            "iframe.html",
+            "css/fontawesome.min.css",
+            "css/regular.min.css",
+            "webfonts/fa-regular-400.woff2"
         ],
         "matches": [
             "http://*/*","https://*/*"

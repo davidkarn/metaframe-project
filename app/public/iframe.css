@@ -1,2 +1,47 @@
 body {
-    background-color: white; }
+    background: linear-gradient(165deg, #fafafa 50%, #e6e6e6 100%);
+    padding: 8px;
+    font-size: 12px;
+    color: #444;
+    padding-bottom: 35px;
+}
+
+.btn-spacer {
+    flex-grow: 2;
+}
+
+.actions {
+    display: flex;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    padding: 10px;
+    padding-left: 16px;
+    padding-right: 16px;
+    background: rgba(220,220,220,0.2);
+}
+
+.action-btn {
+    background:none;
+    border:none;
+    margin:0;
+    padding:0;
+    font-weight: bold;
+    color: #634882;
+    cursor: pointer;
+}
+    
+.action-btn:first-child {
+    color: #3f74a1;
+}
+
+.username {
+    margin-bottom: 6px;
+}
+
+.date {
+    margin-top: 6px;
+    font-style: italic;
+    color: #888;
+}
