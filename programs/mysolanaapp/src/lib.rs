@@ -16,6 +16,7 @@ mod mysolanaapp {
         reply.timestamp        = clock.unix_timestamp;
         reply.username         = username;
         reply.message          = message;
+        reply.to_comment       = to_comment;
 
         Ok(()) }
 

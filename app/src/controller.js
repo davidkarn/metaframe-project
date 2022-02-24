@@ -57,8 +57,15 @@ const App = () => {
             console.log('fetching', filters)
             return program.account.comment.all(filters) }
 
+        const fetch_replies = (filters) => {
+            console.log('fetching', filters)
+            return program.account.reply.all(filters) }
+
         window.fetch_comments = fetch_comments
-        window.md5 = md5
+        window.fetch_replies  = fetch_replies        
+        window.md5            = md5
+        window.sol_program    = program
+        window.bs58           = bs58
         
         const message_listener = (_message) => {
             const message = _message.data
@@ -79,6 +86,55 @@ const App = () => {
                                          site:      message.site,
                                          path:      message.path,
                                          tab_id:    message.tab_id}) }) }
+            
+            if (message.command == 'request_replies') {
+                fetch_replies([
+                    {memcmp: {
+                        offset: 8 + 4,
+                        bytes: bs58.encode(Buffer.from(message.parent_id)) }}])
+
+                    .then(replies => {
+                        replies = replies.map(r => {
+                            return {parent_id: r.account.to_comment,
+                                    author:    r.account.author,
+                                    username:  r.account.username,
+                                    id:        r.publicKey.toString(),
+                                    message:   r.account.message,
+                                    timestamp: new Date(r.account.timestamp * 1000)} })
+                        
+                        send_to_backend({
+                            command:    'send-to-tab',
+                            tab:         message.tab_id,
+                            data:       {command:   'receive_replies',
+                                         replies:    replies,
+                                         parent_id:  message.parent_id}}) }) }
+
+            else if (message.command == 'request_subcomments') {
+                fetch_comments([
+                    {memcmp: {
+                        offset: 8 + 4,
+                        bytes: bs58.encode(Buffer.from(md5("metaframe")))}},
+                    {memcmp:{
+                        offset: 8 + 4 + 32 + 4 + 32 + 4,
+                        bytes: bs58.encode(Buffer.from(message.root_id))}}])
+
+                    .then(subcomments => {
+                        subcomments = subcomments.map(r => {
+                            return {root_id:   message.root_id,
+                                    parent_id: r.account.path,
+                                    author:    r.account.author,
+                                    username:  r.account.username,
+                                    id:        r.publicKey.toString(),
+                                    selection: JSON.parse(r.account.selection),
+                                    message:   r.account.message,
+                                    timestamp: new Date(r.account.timestamp * 1000)} })
+                        
+                        send_to_backend({
+                            command:    'send-to-tab',
+                            tab:         message.tab_id,
+                            data:       {command:     'receive_subcomments',
+                                         subcomments:  subcomments,
+                                         root_id:      message.root_id}}) }) }
 
             else if (message.command == 'post_reply') {
                 const reply  = web3.Keypair.generate()
@@ -94,13 +150,16 @@ const App = () => {
             
             else if (message.command == 'post_comment') {
                 const comment            = web3.Keypair.generate()
+                const is_subcomment      = message.site == 'metaframe'
 
                 const result = program.rpc.postComment(
                     message.name,
                     message.message,
                     md5(message.site),
                     md5(message.path),
-                    md5(JSON.stringify(message.node.nodes[message.node.nodes.length - 1])),
+                    is_subcomment
+                        ? message.node.parent
+                        : md5(JSON.stringify(message.node.nodes[message.node.nodes.length - 1])),
 //                    md5(JSON.stringify(message.node.root_node)),
                     JSON.stringify(message.node),
                     {accounts: {author:        provider.wallet.publicKey,

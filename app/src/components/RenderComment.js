@@ -13,11 +13,23 @@ import {normalize_site,
 const RenderComment = ({wallet, provider, program}) => {
     const [replying, setReplying]            = useState(false)
     const [expanded, setExpanded]            = useState(false)
+    const [subcomments, set_subcomments]     = useState({})
     const [reply_author, set_reply_author]   = useState('')
     const [reply_message, set_reply_message] = useState('')
     const [comment, setComment]              = useState(false)
     let iframe_id                            = query_parameters()['id']
+    const [replies, set_replies]             = useState({[iframe_id]: []})
+    const [parent, set_parent]               = useState(false)
     let date                                 = new Date()
+
+    const [leaving_subcomment,
+           set_leaving_subcomment]           = useState(false)
+    const [subcomment_username,
+           set_subcomment_username]          = useState("")
+    const [subcomment_message,
+           set_subcomment_message]           = useState("")
+    const [subcomment_selection,
+           set_subcomment_selection]         = useState({})
 
     const expand = () => {
         setReplying(true)
@@ -80,32 +92,131 @@ const RenderComment = ({wallet, provider, program}) => {
             __('button', {className: 'submit-btn',
                           onClick:    send_reply},
                "Post Reply")) }
+
+    const open_subcomment_form = () => {
+        const selection        = window.getSelection()
+        const selection_text   = selection.toString()
+        const root_id          = comment.id
+
+        console.log('open_subcomment_form', selection, replies, root_id)
+        
+        if (selection.anchorNode == selection.extentNode) {
+            const comment_id = selection.anchorNode.parentNode.id.replace('message-', '')
+            const comment    = replies[root_id]
+                  .find(r => r.id == comment_id)
+            const start      = comment.message.search(selection_text)
+
+            console.log({comment, comment_id, start}, selection_text)
+            if (start > -1) {
+                set_subcomment_selection({text:   selection_text,
+                                          parent: root_id,
+                                          start:  start,
+                                          end:    start + selection_text.length})
+                set_leaving_subcomment(comment_id) }}}
+
+    const send_subcomment = () => {
+        const site               = "metaframe"
+        const path               = leaving_subcomment // id of parent comment
+        
+        chrome.runtime.sendMessage({
+            command: 'send_to_sol',
+            data:    {command: 'post_comment',
+                      name:     subcomment_username,
+                      message:  subcomment_message,
+                      site,
+                      path,
+                      node:     subcomment_selection}}) }
+
     
     useEffect(
         () => {
-            chrome.runtime.onMessage.addListener((message) => {
-                console.log("gotmessage", message)
-                if (message.command == 'receive_comment' && message.id == iframe_id) {
-                    setComment(message.comment) }})
-
-            console.log('sending', {command:  "send_comment",
-                                    id:        iframe_id})
-            chrome.runtime.sendMessage({command:  "send_comment",
-                                        id:        iframe_id}) },
+            chrome.runtime.sendMessage({
+                command:  "send_to_sol",
+                data:     {command:      "request_replies",
+                           parent_id:     iframe_id}})
+            
+            chrome.runtime.sendMessage({
+                command:  "send_comment",
+                id:        iframe_id}) },
         [])
 
+    useEffect(
+        () => {
+            chrome.runtime.sendMessage({
+                command:  "send_to_sol",
+                data:     {command:      "request_subcomments",
+                           root_id:       comment.id}}) },
+        [comment])
+
+    useEffect(
+        () => {
+            const chrome_listener = (message) => {
+                console.log("gotmessage", message)
+                if (message.command == 'receive_comment' && message.id == iframe_id) {
+                    setComment(message.comment) }
+
+                else if (message.command == 'receive_subcomments') {
+                    set_subcomments({...subcomments,
+                                     [message.root_id]: message.subcomments})
+                    console.log({subcomments}) }
+
+                else if (message.command == 'comment-on-selection')
+                    open_subcomment_form()
+
+                else if (message.command == 'receive_replies') {
+                    set_replies({...replies,
+                                 [message.parent_id]: message.replies}) }}
+
+            chrome.runtime.onMessage.addListener(chrome_listener)
+
+            return () => {
+                chrome.runtime.onMessage.removeListener(chrome_listener) }},
+        [iframe_id, replies, comment])
+
+    const render_comment = (comment) => {
+        return __('div', {className: 'a-comment',
+                          id:        "comment-" + comment.id},
+                  
+                  __('p', {className: 'username'},
+                     __('strong', {}, comment.username)),
+                  __('p', {className: 'date'},
+                     dayjs(date).format('MMM D, YYYY h:mm A')),
+                  __('p', {className: 'comment-message',
+                           id:         'message-' + comment.id}, comment.message),
+
+                  leaving_subcomment == comment.id && __(
+                      'div', {className: 'subcomment-form'}, 
+                      __('input', {type:        'text',
+                                   className:   'form-control',
+                                   placeholder: 'Author',
+                                   value:        subcomment_username,
+                                   onChange:    (e) => set_subcomment_username(e.target.value)}),
+                      __('textarea', {className:   'form-control',
+                                      value:        subcomment_message,
+                                      placeholder: 'Comment',
+                                      onChange:    (e) => set_subcomment_message(e.target.value)}),
+                      __('button', {className: 'submit-btn',
+                                    onClick:    send_subcomment},
+                         "Post Subreply"))) }
+
+    console.log({comment, replies})
+    
     if (!comment) 
         return __('div', {}, "Loading")
     
     else 
         return __('div', {id: 'comment-form'},
-                  __('p', {className: 'username'},
-                     __('strong', {}, comment.username)),
-                  __('p', {className: 'date'},
-                     dayjs(date).format('MMM D, YYYY h:mm A')),
-                  __('p', {}, comment.message),
+                  __('div', {id: 'top-part'},
+                     render_comment(comment),
 
-                  replying && reply_form(),
+                     replying && replies[comment.id].length && __(
+                         'div', {id: 'comment-replies'},
+                         __('strong', {}, "Replies"),
+                         
+                         replies[comment.id]
+                             .map(render_comment)),
+                     
+                     replying && reply_form()),
                   
                   __('div', {className: 'actions'},
                      actions())) }                        
