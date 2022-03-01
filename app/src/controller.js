@@ -66,6 +66,8 @@ const App = () => {
         window.md5            = md5
         window.sol_program    = program
         window.bs58           = bs58
+        window.web3           = web3
+        window.PublicKey      = PublicKey
         
         const message_listener = (_message) => {
             const message = _message.data

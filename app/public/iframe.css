@@ -86,3 +86,14 @@ body {
     padding: 12px;
     overflow-y:scroll;
 }
+
+
+.a-comment {
+    vertical-align: top;
+    display: inline-block; }
+
+.subcomments-summary {
+    vertical-align: top;
+    display: inline-block;
+    width: calc(100% - 48em - 32px);
+}

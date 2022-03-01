@@ -2,6 +2,7 @@ import {useState, useEffect}     from 'react'
 import {Connection, PublicKey}   from '@solana/web3.js'
 import {Program, Provider, web3} from '@project-serum/anchor'
 import idl                       from '../idl.json'
+import md5                       from 'js-md5'
 import __                        from '../jsml.js'
 import dayjs                     from 'dayjs'
 import {normalize_site,
@@ -156,9 +157,21 @@ const RenderComment = ({wallet, provider, program}) => {
                     setComment(message.comment) }
 
                 else if (message.command == 'receive_subcomments') {
-                    set_subcomments({...subcomments,
-                                     [message.root_id]: message.subcomments})
-                    console.log({subcomments}) }
+                    const new_subcomments = subcomments
+                    const reply_ids       = {}
+                    
+                    replies[comment.id]
+                        .map(r => reply_ids[md5(r.id)] = r.id)
+                    
+                    message.subcomments.map(s => {
+                        const parent_id = reply_ids[s.parent_id]
+                        if (!new_subcomments[parent_id])
+                            new_subcomments[parent_id] = []
+
+                        new_subcomments[parent_id].push(s) })
+                    
+                    set_subcomments(new_subcomments)
+                    console.log('subcomments', new_subcomments) }
 
                 else if (message.command == 'comment-on-selection')
                     open_subcomment_form()
@@ -171,33 +184,49 @@ const RenderComment = ({wallet, provider, program}) => {
 
             return () => {
                 chrome.runtime.onMessage.removeListener(chrome_listener) }},
-        [iframe_id, replies, comment])
+        [iframe_id, replies, comment, subcomments])
 
     const render_comment = (comment) => {
-        return __('div', {className: 'a-comment',
-                          id:        "comment-" + comment.id},
-                  
-                  __('p', {className: 'username'},
-                     __('strong', {}, comment.username)),
-                  __('p', {className: 'date'},
-                     dayjs(date).format('MMM D, YYYY h:mm A')),
-                  __('p', {className: 'comment-message',
-                           id:         'message-' + comment.id}, comment.message),
+        return __(
+            'div', {className: 'a-comment-wrapper'},
+            __('div', {className: 'a-comment',
+                       id:        "comment-" + comment.id},
+               
+               __('p', {className: 'username'},
+                  __('strong', {}, comment.username)),
+               __('p', {className: 'date'},
+                  dayjs(date).format('MMM D, YYYY h:mm A')),
+               __('p', {className: 'comment-message',
+                        id:         'message-' + comment.id}, comment.message),
 
-                  leaving_subcomment == comment.id && __(
-                      'div', {className: 'subcomment-form'}, 
-                      __('input', {type:        'text',
-                                   className:   'form-control',
-                                   placeholder: 'Author',
-                                   value:        subcomment_username,
-                                   onChange:    (e) => set_subcomment_username(e.target.value)}),
-                      __('textarea', {className:   'form-control',
-                                      value:        subcomment_message,
-                                      placeholder: 'Comment',
-                                      onChange:    (e) => set_subcomment_message(e.target.value)}),
-                      __('button', {className: 'submit-btn',
-                                    onClick:    send_subcomment},
-                         "Post Subreply"))) }
+               leaving_subcomment == comment.id && __(
+                   'div', {className: 'subcomment-form'}, 
+                   __('input', {type:        'text',
+                                className:   'form-control',
+                                placeholder: 'Author',
+                                value:        subcomment_username,
+                                onChange:    (e) => set_subcomment_username(e.target.value)}),
+                   __('textarea', {className:   'form-control',
+                                   value:        subcomment_message,
+                                   placeholder: 'Comment',
+                                   onChange:    (e) => set_subcomment_message(e.target.value)}),
+                   __('button', {className: 'submit-btn',
+                                 onClick:    send_subcomment},
+                      "Post Subreply"))),
+
+            subcomments[comment.id] && subcomments[comment.id].length > 0 &&
+                __('div', {className: 'subcomments-summary'},
+                   
+                   subcomments[comment.id].map(subcomment => __(
+                       'div', {className: 'a-subcomment'},
+
+                       __('p', {className: 'username'},
+                          __('strong', {}, subcomment.username)),
+                       __('p', {className: 'date'},
+                          dayjs(subcomment.timestamp).format('MMM D, YYYY h:mm A')),
+                       __('p', {className: 'subcomment-message',
+                                id:         'message-' + subcomment.id},
+                          subcomment.message))))) }
 
     console.log({comment, replies})
     
