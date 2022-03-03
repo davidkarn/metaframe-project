@@ -15,6 +15,7 @@ const LeaveComment = ({wallet, provider, program}) => {
     const [node, setNode]         = useState({})
     const [href, setHref]         = useState('')
     let iframe_id                 = query_parameters()['id']
+    let existing_count            = parseInt(query_parameters()['existing_count'])
 
     useEffect(
         () => {
@@ -39,13 +40,18 @@ const LeaveComment = ({wallet, provider, program}) => {
                             text: ''}} }
             
     const submitComment            = async () => {
-        const site               = normalize_site(href)
-        const path               = normalize_site_path(href)
+        const site          = normalize_site(href)
+        const path          = normalize_site_path(href)
+        const command       = existing_count > 0 ? 'post_comment' : 'post_first_comment'
         
         chrome.runtime.sendMessage({
             command: 'send_to_sol',
-            data:    {command: 'post_comment',
-                      name, message, site, path, node: clean_node(node)}}) }
+            data:    {command,
+                      name,
+                      message,
+                      site,
+                      path,
+                      node: clean_node(node)}}) }
                                                 
     return __('div', {id: 'comment-form'},
               __('input', {type:          'text',

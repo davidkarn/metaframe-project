@@ -1,44 +1,61 @@
 const assert = require("assert");
 const anchor = require("@project-serum/anchor");
 const { SystemProgram } = anchor.web3;
+const web3 = anchor.web3;
 
 describe("mysolanaapp", () => {
     let _baseAccount
-  /* create and set a Provider */
-  const provider = anchor.Provider.env();
-  anchor.setProvider(provider);
-  const program = anchor.workspace.Mysolanaapp;
-  it("Creates a counter)", async () => {
-    /* Call the create function via RPC */
-    const baseAccount = anchor.web3.Keypair.generate();
-    await program.rpc.create({
-      accounts: {
-        baseAccount: baseAccount.publicKey,
-        user: provider.wallet.publicKey,
-        systemProgram: SystemProgram.programId,
-      },
-      signers: [baseAccount],
+    const provider = anchor.Provider.env();
+    anchor.setProvider(provider);
+    const program = anchor.workspace.Mysolanaapp;
+
+    it("Creates an index)", async () => {
+        const [indexAddr, bump]  = await web3
+              .PublicKey
+              .findProgramAddress(
+                  [Buffer.from("commentsIndex"), Buffer.from("asfkasdf")],
+                  program.programId)
+        const baseAccount = anchor.web3.Keypair.generate();
+
+        await program.rpc.postComment("ajdlslkfff", "asdfkjasdflff", "asfkasdf", "askldfjalkfsdj", "slkdfjsldj", "lsdfkjslkfdj", bump, {
+            accounts: {
+                comment: baseAccount.publicKey,
+                index: indexAddr,
+                author: provider.wallet.publicKey,
+                systemProgram: SystemProgram.programId,
+            },
+            signers: [baseAccount],
+        });
+/*
+        const account = await program.account.commentsIndex.fetch(indexAddr.publicKey);
+        console.log(account)
+        assert.ok(account == null);
+        _baseAccount = baseAccount;*/
     });
 
-    /* Fetch the account and check the value of count */
-    const account = await program.account.baseAccount.fetch(baseAccount.publicKey);
-    console.log('Count 0: ', account.count.toString())
-    assert.ok(account.count.toString() == 0);
-    _baseAccount = baseAccount;
+    it("updates an index)", async () => {
+        const [indexAddr, bump]  = await web3
+              .PublicKey
+              .findProgramAddress(
+                  [Buffer.from("commentsIndex"), Buffer.from("asfkasdf")],
+                  program.programId)
+        const baseAccount = anchor.web3.Keypair.generate();
 
-  });
-
-  it("Increments the counter", async () => {
-    const baseAccount = _baseAccount;
-
-    await program.rpc.increment({
-      accounts: {
-        baseAccount: baseAccount.publicKey,
-      },
+        await program.rpc.postCommentUpdateIndex("asdfjdlslkfff", "asdfkjasdflffsdfd", "asfkasdf", "askldfjalkfsdj", "slkdfjsldj", "lsdfkjslkfdj", {
+            accounts: {
+                comment: baseAccount.publicKey,
+                index: indexAddr,
+                author: provider.wallet.publicKey,
+                systemProgram: SystemProgram.programId,
+            },
+            signers: [baseAccount],
+        });
+/*        
+        const account = await program.account.CommentsIndex.fetch(indexAddr.publicKey);
+        console.log(account)
+        assert.ok(account == null);
+        _baseAccount = baseAccount;*/
     });
 
-    const account = await program.account.baseAccount.fetch(baseAccount.publicKey);
-    console.log('Count 1: ', account.count.toString())
-    assert.ok(account.count.toString() == 1);
-  });
+    
 });

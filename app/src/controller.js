@@ -1,6 +1,7 @@
 import {useState, useEffect}     from 'react'
 import {Connection, PublicKey}   from '@solana/web3.js'
-import {Program, Provider, web3} from '@project-serum/anchor'
+import {Program, Provider,
+        web3, BN}                from '@project-serum/anchor'
 import bs58                      from 'bs58'
 import React                     from 'react'
 import ReactDOM                  from 'react-dom'
@@ -69,7 +70,7 @@ const App = () => {
         window.web3           = web3
         window.PublicKey      = PublicKey
         
-        const message_listener = (_message) => {
+        const message_listener = async (_message) => {
             const message = _message.data
             console.log('got a message', message.command, message)
             
@@ -150,11 +151,20 @@ const App = () => {
                                 systemProgram: web3.SystemProgram.programId},
                      signers: [reply]}) }
             
-            else if (message.command == 'post_comment') {
+            else if (message.command == 'post_comment'
+                     || message.command == 'post_first_comment') {
                 const comment            = web3.Keypair.generate()
                 const is_subcomment      = message.site == 'metaframe'
+                const fnName             = (message.command == 'post_first_comment'
+                                            ? 'postComment'
+                                            : 'postCommentUpdateIndex')
+                const [indexAddr, bump]  = await web3
+                      .PublicKey
+                      .findProgramAddress(
+                          ["commentsIndex", Buffer.from(md5(message.site))],
+                          program.programId)
 
-                const result = program.rpc.postComment(
+                console.error(fnName, 
                     message.name,
                     message.message,
                     md5(message.site),
@@ -162,12 +172,47 @@ const App = () => {
                     is_subcomment
                         ? message.node.parent
                         : md5(JSON.stringify(message.node.nodes[message.node.nodes.length - 1])),
-//                    md5(JSON.stringify(message.node.root_node)),
-                    JSON.stringify(message.node),
+                    //                    md5(JSON.stringify(message.node.root_node)),
+                              JSON.stringify(message.node),
+                              new BN(bump),
                     {accounts: {author:        provider.wallet.publicKey,
                                 comment:       comment.publicKey,
+                                index:         indexAddr,
                                 systemProgram: web3.SystemProgram.programId},
                      signers: [comment]})
+
+                let result
+                if (fnName == 'postComment')
+                    result = program.rpc[fnName](
+                        message.name,
+                        message.message,
+                        md5(message.site),
+                        md5(message.path),
+                        is_subcomment
+                            ? message.node.parent
+                            : md5(JSON.stringify(message.node.nodes[message.node.nodes.length - 1])),
+                        JSON.stringify(message.node),
+                        new BN(bump),
+                        {accounts: {author:        provider.wallet.publicKey,
+                                    comment:       comment.publicKey,
+                                    index:         indexAddr,
+                                    systemProgram: web3.SystemProgram.programId},
+                         signers: [comment]})
+                else if (false)
+                    result = program.rpc[fnName](
+                        message.name,
+                        message.message,
+                        md5(message.site),
+                        md5(message.path),
+                        is_subcomment
+                            ? message.node.parent
+                            : md5(JSON.stringify(message.node.nodes[message.node.nodes.length - 1])),
+                        JSON.stringify(message.node),
+                        {accounts: {author:        provider.wallet.publicKey,
+                                    comment:       comment.publicKey,
+                                    index:         indexAddr,
+                                    systemProgram: web3.SystemProgram.programId},
+                         signers: [comment]})
         
                 console.log({result}) }
 

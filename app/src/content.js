@@ -4,6 +4,9 @@ import {normalize_site,
         clean_text,
         query_parameters}        from './utils.js'
 
+const comments = {}
+let comments_count = 0
+
 //chrome.runtime.sendMessage({ command: "init-page" });
 function member(ar, value) {
     return ar.indexOf(value) >= 0 }
@@ -421,7 +424,9 @@ function open_new_comment_popup(selection) {
 
     const node          = document.createElement("iframe");
 
-    node.src            = chrome.runtime.getURL('/iframe.html#/leave-comment?id=' + id)
+    node.src            = chrome.runtime.getURL('/iframe.html#/leave-comment'
+                                                + '?id=' + id
+                                                + '&existing_count=' + comments_count)
     node.name           = id
     node.style.position = "fixed"
     node.style.outline  = "none"
@@ -487,7 +492,6 @@ window.top.addEventListener('message', (message, sender) => {
                           id:       message.id,
                           comment:  comments[message.id.replace('comment-', '')]}) }})
 
-const comments = {}
 chrome.runtime.onMessage.addListener( (message, sender) => {
     switch (message.command) {
     case "comment-on-selection":
@@ -501,6 +505,7 @@ chrome.runtime.onMessage.addListener( (message, sender) => {
         
     case "receive_comments":
         console.log('reccomments', {message})
+        comments_count = message.comments.length
         
         message.comments.slice(0,1).map((object) => {
             const _comment = object.account

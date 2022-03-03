@@ -3,12 +3,22 @@
   "name": "mysolanaapp",
   "instructions": [
     {
-      "name": "postReply",
+      "name": "postReplyUpdateIndex",
       "accounts": [
         {
           "name": "reply",
           "isMut": true,
           "isSigner": true
+        },
+        {
+          "name": "index",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "comment",
+          "isMut": false,
+          "isSigner": false
         },
         {
           "name": "author",
@@ -43,6 +53,100 @@
           "name": "comment",
           "isMut": true,
           "isSigner": true
+        },
+        {
+          "name": "index",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "author",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": [
+        {
+          "name": "username",
+          "type": "string"
+        },
+        {
+          "name": "message",
+          "type": "string"
+        },
+        {
+          "name": "site",
+          "type": "string"
+        },
+        {
+          "name": "path",
+          "type": "string"
+        },
+        {
+          "name": "nodeHash",
+          "type": "string"
+        },
+        {
+          "name": "selection",
+          "type": "string"
+        },
+        {
+          "name": "indexBump",
+          "type": "u8"
+        }
+      ]
+    },
+    {
+      "name": "addIndex",
+      "accounts": [
+        {
+          "name": "index",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "author",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": [
+        {
+          "name": "site",
+          "type": "string"
+        },
+        {
+          "name": "path",
+          "type": "string"
+        },
+        {
+          "name": "indexBump",
+          "type": "u8"
+        }
+      ]
+    },
+    {
+      "name": "postCommentUpdateIndex",
+      "accounts": [
+        {
+          "name": "comment",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
+          "name": "index",
+          "isMut": true,
+          "isSigner": false
         },
         {
           "name": "author",
@@ -84,6 +188,56 @@
     }
   ],
   "accounts": [
+    {
+      "name": "CommentsIndex",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "site",
+            "type": "string"
+          },
+          {
+            "name": "path",
+            "type": "string"
+          },
+          {
+            "name": "count",
+            "type": "i32"
+          },
+          {
+            "name": "replyCount",
+            "type": "i32"
+          },
+          {
+            "name": "lastMessage",
+            "type": "i64"
+          },
+          {
+            "name": "commentIds",
+            "type": {
+              "array": [
+                "u8",
+                512
+              ]
+            }
+          },
+          {
+            "name": "messageIds",
+            "type": {
+              "array": [
+                "u8",
+                512
+              ]
+            }
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          }
+        ]
+      }
+    },
     {
       "name": "Reply",
       "type": {
