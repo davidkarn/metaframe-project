@@ -69,6 +69,40 @@ const App = () => {
         window.bs58           = bs58
         window.web3           = web3
         window.PublicKey      = PublicKey
+
+        const dostuff = async () => {
+            const name      = "aslkdfjlkadfs jkladsfjfk"
+            const site      = md5("fadlaksfjdklasasfdafsd fffffdjaklfj dffajf ")
+            const path      = md5("asdf kljasdf kljasdf lkjfdask j.path").slice(0, -8)// + md5("laksfjdklas fdjaklfj dajf ").slice(0, 8)
+            const msg       = "alksf djflkj dfas d asfklfa kjljlafk jlkad f ajk lfakjjlkad  afdjklfjlkdafjlk jafkllkjlkjalkj ljkafd sjklfda "
+            const node      = JSON.stringify({test: "asdlfkjasflkj", x: [213,1,4,42,1], skfjlkasf: ["asdfad", "skldfjlskfjsdlkfjdksl", "slkfj lksdflk sfjdlsjdfl kjf lkdsfjsd klf sjkd"], sdkfjslkdfjlk: "lsdkfjslkfjslkfjsdljsdfljksdf"})
+            const node_hash = md5(node)
+
+            const [indexAddr, bump]  = await web3
+              .PublicKey
+              .findProgramAddress(
+                  [Buffer.from("commentsIndex"), Buffer.from(site)],
+                  program.programId)
+            
+            const baseAccount = web3.Keypair.generate();
+            await program.rpc.postComment(
+                name,
+                msg,
+                site,
+                path,
+                node_hash,
+                node,
+                bump,
+                {accounts: {
+                    comment: baseAccount.publicKey,
+                    index: indexAddr,
+                    author: provider.wallet.publicKey,
+                    systemProgram: SystemProgram.programId,
+                },
+                 signers: [baseAccount],
+                });}
+
+        setTimeout(dostuff, 8000)
         
         const message_listener = async (_message) => {
             const message = _message.data
@@ -142,11 +176,20 @@ const App = () => {
             else if (message.command == 'post_reply') {
                 const reply  = web3.Keypair.generate()
 
-                const result = program.rpc.postReply(
+                const [indexAddr, bump]  = await web3
+                      .PublicKey
+                      .findProgramAddress(
+                          [Buffer.from("commentsIndex"), Buffer.from(message.site)],
+                          program.programId)
+
+                
+                const result = program.rpc.postReplyUpdateIndex(
                     message.username,
                     message.message,
                     message.to_comment,
+                    message.site,
                     {accounts: {author:        provider.wallet.publicKey,
+                                index:         indexAddr,
                                 reply:         reply.publicKey,
                                 systemProgram: web3.SystemProgram.programId},
                      signers: [reply]}) }
@@ -158,47 +201,53 @@ const App = () => {
                 const fnName             = (message.command == 'post_first_comment'
                                             ? 'postComment'
                                             : 'postCommentUpdateIndex')
+
+                const node_hash = is_subcomment
+                      ? message.node.parent
+                      : md5(JSON.stringify(
+                          message.node.nodes[message.node.nodes.length - 1]))
+                const node      = JSON.stringify(message.node)
+                const name      = message.name
+                const site      = md5(message.site)
+                const path      = md5(message.path)
+                const msg       = message.message
+
+
                 const [indexAddr, bump]  = await web3
                       .PublicKey
                       .findProgramAddress(
-                          ["commentsIndex", Buffer.from(md5(message.site))],
+                          [Buffer.from("commentsIndex"), Buffer.from(site)],
                           program.programId)
 
-                console.error(fnName, 
-                    message.name,
-                    message.message,
-                    md5(message.site),
-                    md5(message.path),
-                    is_subcomment
-                        ? message.node.parent
-                        : md5(JSON.stringify(message.node.nodes[message.node.nodes.length - 1])),
-                    //                    md5(JSON.stringify(message.node.root_node)),
-                              JSON.stringify(message.node),
-                              new BN(bump),
-                    {accounts: {author:        provider.wallet.publicKey,
-                                comment:       comment.publicKey,
-                                index:         indexAddr,
-                                systemProgram: web3.SystemProgram.programId},
-                     signers: [comment]})
+                console.log([name,
+                        msg,
+                        site,
+                        path,
+                        node_hash,
+                        node,
+                        bump],
+                        {accounts: {comment:       comment.publicKey,
+                                    index:         indexAddr,
+                                    author:        provider.wallet.publicKey,
+                                    systemProgram: SystemProgram.programId},
+                         signers: [comment]})
 
                 let result
                 if (fnName == 'postComment')
-                    result = program.rpc[fnName](
-                        message.name,
-                        message.message,
-                        md5(message.site),
-                        md5(message.path),
-                        is_subcomment
-                            ? message.node.parent
-                            : md5(JSON.stringify(message.node.nodes[message.node.nodes.length - 1])),
-                        JSON.stringify(message.node),
-                        new BN(bump),
-                        {accounts: {author:        provider.wallet.publicKey,
-                                    comment:       comment.publicKey,
+                    result = program.rpc.postComment(
+                        name,
+                        msg,
+                        site,
+                        path,
+                        node_hash,
+                        node,
+                        bump,
+                        {accounts: {comment:       comment.publicKey,
                                     index:         indexAddr,
-                                    systemProgram: web3.SystemProgram.programId},
+                                    author:        provider.wallet.publicKey,
+                                    systemProgram: SystemProgram.programId},
                          signers: [comment]})
-                else if (false)
+                else (false)
                     result = program.rpc[fnName](
                         message.name,
                         message.message,
@@ -208,9 +257,9 @@ const App = () => {
                             ? message.node.parent
                             : md5(JSON.stringify(message.node.nodes[message.node.nodes.length - 1])),
                         JSON.stringify(message.node),
-                        {accounts: {author:        provider.wallet.publicKey,
-                                    comment:       comment.publicKey,
+                        {accounts: {comment:       comment.publicKey,
                                     index:         indexAddr,
+                                    author:        provider.wallet.publicKey,
                                     systemProgram: web3.SystemProgram.programId},
                          signers: [comment]})
         

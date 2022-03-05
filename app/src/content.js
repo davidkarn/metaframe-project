@@ -512,6 +512,7 @@ chrome.runtime.onMessage.addListener( (message, sender) => {
             const comment  = {username:  _comment.username,
                               message:   _comment.message,
                               node_hash: _comment.nodeHash,
+                              site:      _comment.site,
                               selection: JSON.parse(_comment.selection),
                               id:        bs58.encode(object.publicKey._bn.words)}
             

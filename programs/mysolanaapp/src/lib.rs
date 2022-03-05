@@ -9,7 +9,7 @@ mod mysolanaapp {
     use super::*;
 
     #[inline(never)]
-    pub fn post_reply_update_index(ctx: Context<PostReplyUpdateIndex>, username: String, message: String, to_comment: String) -> ProgramResult {
+    pub fn post_reply_update_index(ctx: Context<PostReplyUpdateIndex>, username: String, message: String, to_comment: String, site: String) -> ProgramResult {
         let reply: &mut Account<Reply>     = &mut ctx.accounts.reply;
         let index: &mut Account<CommentsIndex>     = &mut ctx.accounts.index;
         let author: &Signer                = &ctx.accounts.author;
@@ -94,7 +94,7 @@ mod mysolanaapp {
 
 
     #[inline(never)]
-    pub fn post_comment_update_index(ctx: Context<PostCommentUpdateIndex>, username: String, message: String, site: String, path: String, node_hash: String/*, root_node_hash: String*/, selection: String) -> ProgramResult {
+    pub fn post_comment_update_index(ctx: Context<PostCommentUpdateIndex>, username: String, message: String, site: String, path: String, node_hash: String, selection: String) -> ProgramResult {
         let comment: &mut Account<Comment> = &mut ctx.accounts.comment;
         let index: &mut Account<CommentsIndex>     = &mut ctx.accounts.index;
         let author: &Signer                = &ctx.accounts.author;
@@ -152,17 +152,20 @@ pub struct PostReply<'info> {
     pub author: Signer<'info>,
     #[account(address = system_program::ID)]    
     pub system_program: AccountInfo<'info>, }
-*/
+ */
+
+fn hash_seed(hash: &str) -> &[u8] {
+    let b = hash.as_bytes();
+    if b.len() > 32 { &b[0..32] } else { b }
+}
     
 #[derive(Accounts)]
-#[instruction(username: String, message: String, to_comment: String)]
+#[instruction(username: String, message: String, to_comment: String, site: String)]
 pub struct PostReplyUpdateIndex<'info> {
     #[account(init, payer = author, space = Reply::LEN)]
     pub reply: Box<Account<'info, Reply>>,
-    #[account(seeds = [comment.site.as_ref()], bump=index.bump, mut)]
+    #[account(seeds = [b"commentsIndex", site.as_bytes()], bump=index.bump, mut)]
     pub index: Box<Account<'info, CommentsIndex>>,
-    #[account()]
-    pub comment: Box<Account<'info, Comment>>,
     #[account(mut)]
     pub author: Signer<'info>,
     #[account(address = system_program::ID)]    
@@ -236,7 +239,7 @@ impl Reply {
     const LEN: usize = 2048; }
 
 impl CommentsIndex {
-    const LEN: usize = 4 + 32 + 32 + 4 + 4 + 8 + 512 + 512 + 1; }
+    const LEN: usize = 8 + 32 + 4 + 32 + 4 + 4 + 4 + 8 + 512 + 512 + 1; }
 
 impl Comment {
     const LEN: usize = 10240; }

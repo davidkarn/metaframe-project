@@ -16,11 +16,6 @@
           "isSigner": false
         },
         {
-          "name": "comment",
-          "isMut": false,
-          "isSigner": false
-        },
-        {
           "name": "author",
           "isMut": true,
           "isSigner": true
@@ -42,6 +37,10 @@
         },
         {
           "name": "toComment",
+          "type": "string"
+        },
+        {
+          "name": "site",
           "type": "string"
         }
       ]
@@ -93,40 +92,6 @@
         },
         {
           "name": "selection",
-          "type": "string"
-        },
-        {
-          "name": "indexBump",
-          "type": "u8"
-        }
-      ]
-    },
-    {
-      "name": "addIndex",
-      "accounts": [
-        {
-          "name": "index",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "author",
-          "isMut": true,
-          "isSigner": true
-        },
-        {
-          "name": "systemProgram",
-          "isMut": false,
-          "isSigner": false
-        }
-      ],
-      "args": [
-        {
-          "name": "site",
-          "type": "string"
-        },
-        {
-          "name": "path",
           "type": "string"
         },
         {
@@ -230,6 +195,26 @@
                 512
               ]
             }
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "CommentsIndexy",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "site",
+            "type": "string"
+          },
+          {
+            "name": "path",
+            "type": "string"
           },
           {
             "name": "bump",
