@@ -26,12 +26,13 @@ const opts             = {preflightCommitment: "processed"}
 const programID        = new PublicKey(idl.metadata.address)
 
 const App = () => {
-    const [value, setValue] = useState(null)
-    const wallet            = useWallet()
+    const [value, setValue]       = useState(null)
+    const wallet                  = useWallet()
+    let connection
 
     function getProvider() {
         const network     = "http://127.0.0.1:8899"
-        const connection  = new Connection(network, opts.preflightCommitment)
+        connection        = new Connection(network, opts.preflightCommitment)
 
         const provider    = new Provider(
             connection, wallet, opts.preflightCommitment)
@@ -53,6 +54,8 @@ const App = () => {
     
     const init_app = () => {
         console.log('initing app')
+        let watching       
+        let watch_listener 
 
         const fetch_comments = (filters) => {
             console.log('fetching', filters)
@@ -70,45 +73,32 @@ const App = () => {
         window.web3           = web3
         window.PublicKey      = PublicKey
 
-        const dostuff = async () => {
-            const name      = "aslkdfjlkadfs jkladsfjfk"
-            const site      = md5("fadlaksfjdklasasfdafsd fffffdjaklfj dffajf ")
-            const path      = md5("asdf kljasdf kljasdf lkjfdask j.path").slice(0, -8)// + md5("laksfjdklas fdjaklfj dajf ").slice(0, 8)
-            const msg       = "alksf djflkj dfas d asfklfa kjljlafk jlkad f ajk lfakjjlkad  afdjklfjlkdafjlk jafkllkjlkjalkj ljkafd sjklfda "
-            const node      = JSON.stringify({test: "asdlfkjasflkj", x: [213,1,4,42,1], skfjlkasf: ["asdfad", "skldfjlskfjsdlkfjdksl", "slkfj lksdflk sfjdlsjdfl kjf lkdsfjsd klf sjkd"], sdkfjslkdfjlk: "lsdkfjslkfjslkfjsdljsdfljksdf"})
-            const node_hash = md5(node)
+        const change_watching = async (new_site) => {
+            new_site = new_site.toLowerCase();
+            if (new_site == watching) return
 
-            const [indexAddr, bump]  = await web3
-              .PublicKey
-              .findProgramAddress(
-                  [Buffer.from("commentsIndex"), Buffer.from(site)],
-                  program.programId)
-            
-            const baseAccount = web3.Keypair.generate();
-            await program.rpc.postComment(
-                name,
-                msg,
-                site,
-                path,
-                node_hash,
-                node,
-                bump,
-                {accounts: {
-                    comment: baseAccount.publicKey,
-                    index: indexAddr,
-                    author: provider.wallet.publicKey,
-                    systemProgram: SystemProgram.programId,
-                },
-                 signers: [baseAccount],
-                });}
+            if (watch_listener)
+                connection.removeAccountChangeListener(watch_listener)
 
-        setTimeout(dostuff, 8000)
+            watching                  = new_site
+            const key                 = md5(new_site)
+            const [indexAddr, bump]   = await web3
+                  .PublicKey
+                  .findProgramAddress(
+                      [Buffer.from("commentsIndex"), Buffer.from(key)],
+                      program.programId)
+
+            watch_listener = connection.onAccountChange(
+                indexAddr,
+                (account_info, context) => {
+                    console.log({account_info, context}) }) }
         
         const message_listener = async (_message) => {
             const message = _message.data
             console.log('got a message', message.command, message)
             
             if (message.command == 'request_comments') {
+                change_watching(message.site)
                 
                 fetch_comments([
                     {memcmp: {
@@ -123,8 +113,11 @@ const App = () => {
                                          site:      message.site,
                                          path:      message.path,
                                          tab_id:    message.tab_id}) }) }
+
+            else if (message.command == 'change_domain') 
+                change_watching(message.site)
             
-            if (message.command == 'request_replies') {
+            else if (message.command == 'request_replies') {
                 fetch_replies([
                     {memcmp: {
                         offset: 8 + 4,

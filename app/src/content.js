@@ -507,7 +507,7 @@ chrome.runtime.onMessage.addListener( (message, sender) => {
         console.log('reccomments', {message})
         comments_count = message.comments.length
         
-        message.comments.slice(0,1).map((object) => {
+        message.comments.map((object) => {
             const _comment = object.account
             const comment  = {username:  _comment.username,
                               message:   _comment.message,
