@@ -33,11 +33,11 @@ const App = () => {
     let mod_program_id
     let mod_program
 
-    function get_mod_program(address) {
+    async function get_mod_program(address) {
         if (address)
             fetch(address)
             .then(x => x.json())
-            .then(mod_idl => {
+            .then(async mod_idl => {
                 mod_program_id            = new PublicKey(mod_idl.metadata.address)
                 mod_program               = new Program(mod_idl, mod_program_id, provider)
                 window.mod_program        = mod_program
