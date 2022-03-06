@@ -16,11 +16,6 @@
           "isSigner": false
         },
         {
-          "name": "comment",
-          "isMut": false,
-          "isSigner": false
-        },
-        {
           "name": "author",
           "isMut": true,
           "isSigner": true
@@ -42,6 +37,10 @@
         },
         {
           "name": "toComment",
+          "type": "string"
+        },
+        {
+          "name": "site",
           "type": "string"
         }
       ]

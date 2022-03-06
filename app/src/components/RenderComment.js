@@ -51,9 +51,11 @@ const RenderComment = ({wallet, provider, program}) => {
         expand() }
 
     const send_reply = () => {
+        console.error({comment, parent})
         chrome.runtime.sendMessage({
             command: 'send_to_sol',
             data:     {command:    'post_reply',
+                       site:        comment.site,
                        to_comment:  iframe_id,
                        username:    reply_author,
                        message:     reply_message}}) }

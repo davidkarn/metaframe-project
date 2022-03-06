@@ -26,12 +26,34 @@ const opts             = {preflightCommitment: "processed"}
 const programID        = new PublicKey(idl.metadata.address)
 
 const App = () => {
-    const [value, setValue] = useState(null)
-    const wallet            = useWallet()
+    const [value, setValue]       = useState(null)
+    const wallet                  = useWallet()
+    let connection
+    let mod_program_def
+    let mod_program_id
+    let mod_program
+
+    function get_mod_program(address) {
+        if (address)
+            fetch(address)
+            .then(x => x.json())
+            .then(mod_idl => {
+                mod_program_id            = new PublicKey(mod_idl.metadata.address)
+                mod_program               = new Program(mod_idl, mod_program_id, provider)
+                window.mod_program        = mod_program
+
+                const [definition, bump]  = await web3
+                      .PublicKey
+                      .findProgramAddress(
+                          [Buffer.from("definition")],
+                          mod_program.programId)
+                
+                const account     = mod_program.account.baseAccount.fetch(indexAddr)
+                mod_program_def   = JSON.parse(account.program) }) }
 
     function getProvider() {
         const network     = "http://127.0.0.1:8899"
-        const connection  = new Connection(network, opts.preflightCommitment)
+        connection        = new Connection(network, opts.preflightCommitment)
 
         const provider    = new Provider(
             connection, wallet, opts.preflightCommitment)
@@ -53,6 +75,8 @@ const App = () => {
     
     const init_app = () => {
         console.log('initing app')
+        let watching       
+        let watch_listener
 
         const fetch_comments = (filters) => {
             console.log('fetching', filters)
@@ -69,12 +93,34 @@ const App = () => {
         window.bs58           = bs58
         window.web3           = web3
         window.PublicKey      = PublicKey
+        window.provider       = provider
+
+        const change_watching = async (new_site) => {
+            new_site = new_site.toLowerCase();
+            if (new_site == watching) return
+
+            if (watch_listener)
+                connection.removeAccountChangeListener(watch_listener)
+
+            watching                  = new_site
+            const key                 = md5(new_site)
+            const [indexAddr, bump]   = await web3
+                  .PublicKey
+                  .findProgramAddress(
+                      [Buffer.from("commentsIndex"), Buffer.from(key)],
+                      program.programId)
+
+            watch_listener = connection.onAccountChange(
+                indexAddr,
+                (account_info, context) => {
+                    console.log({account_info, context}) }) }
         
         const message_listener = async (_message) => {
             const message = _message.data
             console.log('got a message', message.command, message)
             
             if (message.command == 'request_comments') {
+                change_watching(message.site)
                 
                 fetch_comments([
                     {memcmp: {
@@ -89,8 +135,11 @@ const App = () => {
                                          site:      message.site,
                                          path:      message.path,
                                          tab_id:    message.tab_id}) }) }
+
+            else if (message.command == 'change_domain') 
+                change_watching(message.site)
             
-            if (message.command == 'request_replies') {
+            else if (message.command == 'request_replies') {
                 fetch_replies([
                     {memcmp: {
                         offset: 8 + 4,
@@ -139,14 +188,26 @@ const App = () => {
                                          subcomments:  subcomments,
                                          root_id:      message.root_id}}) }) }
 
+            else if (message.command == 'send_options')
+                get_mod_program(message.idl_address)
+
             else if (message.command == 'post_reply') {
                 const reply  = web3.Keypair.generate()
 
-                const result = program.rpc.postReply(
+                const [indexAddr, bump]  = await web3
+                      .PublicKey
+                      .findProgramAddress(
+                          [Buffer.from("commentsIndex"), Buffer.from(message.site)],
+                          program.programId)
+
+                
+                const result = program.rpc.postReplyUpdateIndex(
                     message.username,
                     message.message,
                     message.to_comment,
+                    message.site,
                     {accounts: {author:        provider.wallet.publicKey,
+                                index:         indexAddr,
                                 reply:         reply.publicKey,
                                 systemProgram: web3.SystemProgram.programId},
                      signers: [reply]}) }
@@ -158,47 +219,53 @@ const App = () => {
                 const fnName             = (message.command == 'post_first_comment'
                                             ? 'postComment'
                                             : 'postCommentUpdateIndex')
+
+                const node_hash = is_subcomment
+                      ? message.node.parent
+                      : md5(JSON.stringify(
+                          message.node.nodes[message.node.nodes.length - 1]))
+                const node      = JSON.stringify(message.node)
+                const name      = message.name
+                const site      = md5(message.site)
+                const path      = md5(message.path)
+                const msg       = message.message
+
+
                 const [indexAddr, bump]  = await web3
                       .PublicKey
                       .findProgramAddress(
-                          ["commentsIndex", Buffer.from(md5(message.site))],
+                          [Buffer.from("commentsIndex"), Buffer.from(site)],
                           program.programId)
 
-                console.error(fnName, 
-                    message.name,
-                    message.message,
-                    md5(message.site),
-                    md5(message.path),
-                    is_subcomment
-                        ? message.node.parent
-                        : md5(JSON.stringify(message.node.nodes[message.node.nodes.length - 1])),
-                    //                    md5(JSON.stringify(message.node.root_node)),
-                              JSON.stringify(message.node),
-                              new BN(bump),
-                    {accounts: {author:        provider.wallet.publicKey,
-                                comment:       comment.publicKey,
-                                index:         indexAddr,
-                                systemProgram: web3.SystemProgram.programId},
-                     signers: [comment]})
+                console.log([name,
+                        msg,
+                        site,
+                        path,
+                        node_hash,
+                        node,
+                        bump],
+                        {accounts: {comment:       comment.publicKey,
+                                    index:         indexAddr,
+                                    author:        provider.wallet.publicKey,
+                                    systemProgram: SystemProgram.programId},
+                         signers: [comment]})
 
                 let result
                 if (fnName == 'postComment')
-                    result = program.rpc[fnName](
-                        message.name,
-                        message.message,
-                        md5(message.site),
-                        md5(message.path),
-                        is_subcomment
-                            ? message.node.parent
-                            : md5(JSON.stringify(message.node.nodes[message.node.nodes.length - 1])),
-                        JSON.stringify(message.node),
-                        new BN(bump),
-                        {accounts: {author:        provider.wallet.publicKey,
-                                    comment:       comment.publicKey,
+                    result = program.rpc.postComment(
+                        name,
+                        msg,
+                        site,
+                        path,
+                        node_hash,
+                        node,
+                        bump,
+                        {accounts: {comment:       comment.publicKey,
                                     index:         indexAddr,
-                                    systemProgram: web3.SystemProgram.programId},
+                                    author:        provider.wallet.publicKey,
+                                    systemProgram: SystemProgram.programId},
                          signers: [comment]})
-                else if (false)
+                else (false)
                     result = program.rpc[fnName](
                         message.name,
                         message.message,
@@ -208,9 +275,9 @@ const App = () => {
                             ? message.node.parent
                             : md5(JSON.stringify(message.node.nodes[message.node.nodes.length - 1])),
                         JSON.stringify(message.node),
-                        {accounts: {author:        provider.wallet.publicKey,
-                                    comment:       comment.publicKey,
+                        {accounts: {comment:       comment.publicKey,
                                     index:         indexAddr,
+                                    author:        provider.wallet.publicKey,
                                     systemProgram: web3.SystemProgram.programId},
                          signers: [comment]})
         
@@ -218,6 +285,8 @@ const App = () => {
 
             console.log('gotmessageinifrmae', message) }
 
+        send_to_backend({command: 'send_options'})
+        
         window.top.addEventListener('message', message_listener)
 
         return () => {
