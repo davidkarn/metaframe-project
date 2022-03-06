@@ -2,7 +2,7 @@ use anchor_lang::prelude::*;
 use anchor_lang::solana_program::system_program;
 use std::convert::TryFrom;
 
-declare_id!("6FFmFrZMQxH3DB2VGwVaAR13tEgvmfyHVwhMVooot9VG");
+declare_id!("2r78ZhLbrEckmrENcwMWDKKwR3kw6nLf7U8PU3UZQfjL");
 
 #[program]
 mod mysolanaapp {
