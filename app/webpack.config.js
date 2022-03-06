@@ -6,6 +6,7 @@ module.exports = {
     entry: {options:    path.resolve(__dirname, './src/index.js'),
 	          content:    path.resolve(__dirname, './src/content.js'),
 	          controller: path.resolve(__dirname, './src/controller.js'),
+	          popup:      path.resolve(__dirname, './src/popup.js'),
 	          background: path.resolve(__dirname, './src/background.js'),
 	          iframe:     path.resolve(__dirname, './src/iframe.js')},
     module: {

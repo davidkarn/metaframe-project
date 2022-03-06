@@ -29,6 +29,19 @@ const App = () => {
     const [value, setValue]       = useState(null)
     const wallet                  = useWallet()
     let connection
+    let mod_program_id
+    let mod_program
+
+    function get_mod_program(address) {
+        if (address)
+            fetch(address)
+            .then(x => x.json())
+            .then(mod_idl => {
+                mod_program_id = new PublicKey(mod_idl.metadata.address)
+                mod_program    = new Program(mod_idl, mod_program_id, provider)
+                window.mod_program = mod_program
+                console.error({mod_program})
+            }) }
 
     function getProvider() {
         const network     = "http://127.0.0.1:8899"
@@ -55,7 +68,7 @@ const App = () => {
     const init_app = () => {
         console.log('initing app')
         let watching       
-        let watch_listener 
+        let watch_listener
 
         const fetch_comments = (filters) => {
             console.log('fetching', filters)
@@ -166,6 +179,9 @@ const App = () => {
                                          subcomments:  subcomments,
                                          root_id:      message.root_id}}) }) }
 
+            else if (message.command == 'send_options')
+                get_mod_program(message.idl_address)
+
             else if (message.command == 'post_reply') {
                 const reply  = web3.Keypair.generate()
 
@@ -260,6 +276,8 @@ const App = () => {
 
             console.log('gotmessageinifrmae', message) }
 
+        send_to_backend({command: 'send_options'})
+        
         window.top.addEventListener('message', message_listener)
 
         return () => {

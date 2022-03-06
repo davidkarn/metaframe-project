@@ -8,9 +8,9 @@
         "default_icon": {
             "32": "img/icon-32.png"
         },
-        "default_title": "MetaFrame"
+        "default_title": "MetaFrame",
+        "default_popup": "options.html"
     },
-    "options_page": "options.html",
     "background": {
         "service_worker":  "background.bundle.js"
     },
