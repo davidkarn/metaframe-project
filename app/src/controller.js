@@ -29,6 +29,7 @@ const App = () => {
     const [value, setValue]       = useState(null)
     const wallet                  = useWallet()
     let connection
+    let mod_program_def
     let mod_program_id
     let mod_program
 
@@ -37,11 +38,18 @@ const App = () => {
             fetch(address)
             .then(x => x.json())
             .then(mod_idl => {
-                mod_program_id = new PublicKey(mod_idl.metadata.address)
-                mod_program    = new Program(mod_idl, mod_program_id, provider)
-                window.mod_program = mod_program
-                console.error({mod_program})
-            }) }
+                mod_program_id            = new PublicKey(mod_idl.metadata.address)
+                mod_program               = new Program(mod_idl, mod_program_id, provider)
+                window.mod_program        = mod_program
+
+                const [definition, bump]  = await web3
+                      .PublicKey
+                      .findProgramAddress(
+                          [Buffer.from("definition")],
+                          mod_program.programId)
+                
+                const account     = mod_program.account.baseAccount.fetch(indexAddr)
+                mod_program_def   = JSON.parse(account.program) }) }
 
     function getProvider() {
         const network     = "http://127.0.0.1:8899"
@@ -85,6 +93,7 @@ const App = () => {
         window.bs58           = bs58
         window.web3           = web3
         window.PublicKey      = PublicKey
+        window.provider       = provider
 
         const change_watching = async (new_site) => {
             new_site = new_site.toLowerCase();

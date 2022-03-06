@@ -34,18 +34,20 @@ chrome.runtime.onMessage.addListener((message, sender) => {
     else if (message.command == 'save_comment') {
         comments[message.id] = message.comment }
 
-    else if (message.command == 'send_options') 
+    else if (message.command == 'send_options') {
+        console.log('sendoptions', message)
         chrome.tabs.query(
             {url: 'https://metaframe.io:8080/connector.html'},
 		        (result) => {
-                console.log('sending', message.data, result, localStorage)
-                chrome.tabs.sendMessage(
-                    result[0].id,
-                    {command: 'send_to_controller',
-                     tab_id:   sender.tab.id,
-                     data:     {tab_id:      sender.tab.id,
-                                command:    'send_options',
-                                idl_address: localStorage.idlAddress}})}) 
+                console.log('sending sendoptions', message.data)
+                chrome.storage.local.get().then(storage => {
+                    chrome.tabs.sendMessage(
+                        result[0].id,
+                        {command: 'send_to_controller',
+                         tab_id:   sender.tab.id,
+                         data:     {tab_id:      sender.tab.id,
+                                    command:    'send_options',
+                                    idl_address: storage.idl_address}}) }) }) }
 
     else if (message.command == 'send_node')
         chrome.tabs.sendMessage(

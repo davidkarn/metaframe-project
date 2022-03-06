@@ -13,18 +13,19 @@ const App = () => {
     const [success, setSuccess]        = useState(false)
     const [moderationAddress,
            setModerationAddress]       = useState('')
-    const [idlAddress, setIdlAddress]  = useState('')
+    const [idl_address, set_idl_address]  = useState('')
     
     useEffect(
         () => {
             setOptions(localStorage)
-            setIdlAddress(localStorage.idlAddress)
-            setModerationAddress(localStorage.moderationAddress)},
+            chrome.storage.local
+                .get()
+                .then(
+                    x => set_idl_address(x.idl_address)) },
         [])
 
     const save = (address) => {
-        localStorage.moderationAddress = moderationAddress
-        localStorage.idlAddress = idlAddress
+        chrome.storage.local.set({idl_address: idl_address})
         setSuccess(true) }
 
     return __('div', {style: {padding:    '18px',
@@ -45,8 +46,8 @@ const App = () => {
               __('p', {},
                  __('input', {className: 'form-control',
                               type:      'text',
-                              value:      idlAddress,
-                              onChange:  (e) => setIdlAddress(e.target.value)})),
+                              value:      idl_address,
+                              onChange:  (e) => set_idl_address(e.target.value)})),
 
               success && __('p', {}, "Updated successfully"),
               
