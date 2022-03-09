@@ -15,7 +15,7 @@ pub mod mf_default_moderation {
 \"scorer\":[\"block\",
   [\"set\", \"scores\", 
     [\"pull-account\", [\"pda\", [\"lst\", [\"str\", \"siteScore\"], \"site-hash\"], 
-    \"program-id\"]]],
+    \"program-id\"], \"program\", [\"str\", \"SiteScore\"]]],
   [\"set\", \"this-score\", [\"find-value\", \"scores\", \"comment-id\"]]
   [\"if\", \"this-score\",
    [\"block\",
@@ -26,7 +26,9 @@ pub mod mf_default_moderation {
 \"upvote\":[\"block\"
   [\"set\", [\"lst\", \"acct\", \"bump\"],
             [\"pull-account\", [\"pda\", [\"lst\", [\"str\", \"siteScore\"], \"site-hash\"],
-                                         \"program-id\"]]],
+                                         \"program-id\"],
+                               \"program\", 
+                              [\"str\", \"SiteScore\"]]],
   [\"if\", \"acct\",
     [\"call-program\", 
       [\"str\", \"upvote\"], 
@@ -49,7 +51,9 @@ pub mod mf_default_moderation {
 \"downvote\":[\"block\"
   [\"set\", [\"lst\", \"acct\", \"bump\"],
             [\"pull-account\", [\"pda\", [\"lst\", [\"str\", \"siteScore\"], \"site-hash\"],
-                                         \"program-id\"]]],
+                                         \"program-id\"], 
+                               \"program\", 
+                              [\"str\", \"SiteScore\"]]],
   [\"if\", \"acct\",
     [\"call-program\", 
       [\"str\", \"downvote\"], 

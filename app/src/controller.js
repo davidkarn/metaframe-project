@@ -66,7 +66,7 @@ const App = () => {
     const program   = new Program(idl, programID, provider);
 
     
-    const eval_program = (program, variables={}) {
+    const eval_program = async (program, variables={}) => {
         const fn = eval_program[0]
 
         if (typeof program == "string")
@@ -109,20 +109,38 @@ const App = () => {
             return dict
 
         case "pull-account":
-            // ...
-            break
+            let mod_program  = eval_program(program[2], variables)
+            let addr         = eval_program(program[1], variables)
+            let account_name = eval_program(program[3], variables)
+
+            return mod_program
+                .account[account_name]
+                .fetch(addr)
             
         case "call-program":
-            // ...
-            break
+            let mod_program   = eval_program(program[1], variables)
+            let command       = eval_program(program[2], variables)
+            let args          = eval_program(program[3], variables)
+            let options       = eval_program(program[4], variables)
+
+            args.push(options)
+            
+            return await mod_program.rpc[command].apply(
+                mod_program.rpc[command],
+                args)
             
         case "find-value":
             //...
             break
 
         case "pda":
-            //...
-            break
+            const [addr, bump]  = await web3
+                .PublicKey
+                .findProgramAddress(
+                    eval_program(program[1], variables)
+                        .map(x => Buffer.from(x)),
+                    eval_program(program[2], variables))
+            return [addr, bump]
         }
 
         return null;
