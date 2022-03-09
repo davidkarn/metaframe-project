@@ -65,6 +65,70 @@ const App = () => {
     const provider  = getProvider();
     const program   = new Program(idl, programID, provider);
 
+    
+    const eval_program = (program, variables={}) {
+        const fn = eval_program[0]
+
+        if (typeof program == "string")
+            return variables[program]
+
+        switch (fn) {
+        case "block":
+            let ret
+            for (let i = 1; i < program.length; i++) 
+                ret = eval_program(program[i], variables)
+            return ret;
+
+        case "str":
+            return program[1]
+
+        case "set":
+            variables[program[1]] = eval_program(program.slice(2), variables);
+            return variables[program[1]]
+
+        case "if":
+            if (eval_program(program[1], variables))
+                return eval_program(program[2], variables)
+            else
+                return eval_program(program[3], variables)
+
+        case "nth":
+            return eval_program(program[1])[program[2]]
+
+        case "lst":
+            return program.slice(1)
+                .map(
+                    x => eval_program(x, variables))
+
+        case "dict":
+            const dict = {}
+            for (let i = 1; i < program.length; i++) 
+                dict[eval_program(program[i],
+                                  variables)] = eval_program(program[i + 1],
+                                                             variables)
+            return dict
+
+        case "pull-account":
+            // ...
+            break
+            
+        case "call-program":
+            // ...
+            break
+            
+        case "find-value":
+            //...
+            break
+
+        case "pda":
+            //...
+            break
+        }
+
+        return null;
+    }
+            
+
     const send_to_worker = (message) => {
         window.top.postMessage({command: forward_to_worker,
                                 message: message}) }

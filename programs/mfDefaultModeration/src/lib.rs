@@ -80,7 +80,7 @@ pub mod mf_default_moderation {
         let author: &Signer                     = &ctx.accounts.author;
 
 
-        let mut init_votes: [u8; 10188]   = [0; 10188];
+        let mut init_votes: Vec<u8> = vec![0; 10188];
 
         for i in 0..32 {
             init_votes[i] = comment_id[i]; }
@@ -91,7 +91,7 @@ pub mod mf_default_moderation {
         site_score.bump  = bump;
         site_score.votes = init_votes;
 
-        OK() }
+        Ok(()) }
 
     pub fn upvote(ctx: Context<UpvoteNew>, site_hash: String, comment_id: [u8; 32]) -> ProgramResult {
         let site_score: &mut Account<SiteScore> = &mut ctx.accounts.siteScore;
@@ -103,19 +103,19 @@ pub mod mf_default_moderation {
         for i in 0..(10188 / 36) {
             let j = i * 36;
             
-            if (site_score.votes[(j)..(j + 32)] == comment_id) {
+            if site_score.votes[(j)..(j + 32)] == comment_id {
                 msg!("found the comment");
                 found_comment           = true;
                 let mut current_upvotes = LittleEndian::read_u16(
                     &site_score.votes[(j)..(j + 34)]);
                 
                 current_upvotes        += 1;
-                let upvotes_bytes       = current_upvotes.as_bytes();
+                let upvotes_bytes       = current_upvotes.to_le_bytes();
                 
                 site_score.votes[j + 32]      = upvotes_bytes[0];
                 site_score.votes[j + 33]      = upvotes_bytes[1]; }
             
-            else if (site_score.votes[(j)..(j + 32)] == blank_comment) {
+            else if site_score.votes[(j)..(j + 32)] == blank_comment {
                 found_comment = true;
                 for k in 0..32 {
                     site_score.votes[j + k]  = comment_id[k];
@@ -123,16 +123,15 @@ pub mod mf_default_moderation {
                     
         
         site_score.site  = site_hash;
-        site_score.bump  = bump;
 
-        OK() }
+        Ok(()) }
 
     pub fn downvote_new(ctx: Context<UpvoteNew>, site_hash: String, comment_id: [u8; 32], bump: u8) -> ProgramResult {
         let site_score: &mut Account<SiteScore> = &mut ctx.accounts.siteScore;
         let author: &Signer                     = &ctx.accounts.author;
 
 
-        let mut init_votes: [u8; 10188]   = [0; 10188];
+        let mut init_votes: Vec<u8> = vec![0; 10188];
 
         for i in 0..32 {
             init_votes[i] = comment_id[i]; }
@@ -143,7 +142,7 @@ pub mod mf_default_moderation {
         site_score.bump  = bump;
         site_score.votes = init_votes;
 
-        OK() }
+        Ok(()) }
 
     pub fn downvote(ctx: Context<UpvoteNew>, site_hash: String, comment_id: [u8; 32]) -> ProgramResult {
         let site_score: &mut Account<SiteScore> = &mut ctx.accounts.siteScore;
@@ -155,28 +154,27 @@ pub mod mf_default_moderation {
         for i in 0..(10188 / 36) {
             let j = i * 36;
             
-            if (site_score.votes[(j)..(j + 32)] == comment_id) {
+            if site_score.votes[(j)..(j + 32)] == comment_id {
                 msg!("found the comment");
                 found_comment             = true;
                 let mut current_downvotes = LittleEndian::read_u16(
                     &site_score.votes[(j)..(j + 34)]);
                 
                 current_downvotes        -= 1;
-                let downvote_bytes        = current_upvotes.as_bytes();
+                let downvote_bytes        = current_downvotes.to_le_bytes();
                 
-                site_score.votes[j + 34]      = downvotes_bytes[0];
-                site_score.votes[j + 35]      = downvotes_bytes[1]; }
+                site_score.votes[j + 34]      = downvote_bytes[0];
+                site_score.votes[j + 35]      = downvote_bytes[1]; }
             
-            else if (site_score.votes[(j)..(j + 32)] == blank_comment) {
+            else if site_score.votes[(j)..(j + 32)] == blank_comment {
                 found_comment = true;
                 for k in 0..32 {
                     site_score.votes[j + k]  = comment_id[k];
                     site_score.votes[j + 33] = 1; }}}
                             
         site_score.site  = site_hash;
-        site_score.bump  = bump;
 
-        OK() }
+        Ok(()) }
 
 }
 
@@ -193,7 +191,7 @@ pub struct Initialize<'info> {
 #[derive(Accounts)]
 #[instruction(site_hash: String, comment_id: String)]
 pub struct Upvote<'info> {
-    #[account(mut, init, payer=author, space= 10240, seeds=[b"siteScore", site_hash.as_bytes], bump=siteScore.bump)]
+    #[account(mut, seeds=[b"siteScore", site_hash.as_bytes()], bump=siteScore.bump)]
     pub siteScore: Box<Account<'info, SiteScore>>,
     #[account(mut)]
     pub author: Signer<'info>,
@@ -203,7 +201,28 @@ pub struct Upvote<'info> {
 #[derive(Accounts)]
 #[instruction(site_hash: String, comment_id: String, bump: u8)]
 pub struct UpvoteNew<'info> {
-    #[account(mut, seeds=[b"siteScore", site_hash.as_bytes], bump)]
+    #[account(init, payer=author, space=SiteScore::LEN, seeds=[b"siteScore", site_hash.as_bytes()], bump)]
+    pub siteScore: Box<Account<'info, SiteScore>>,
+    #[account(mut)]
+    pub author: Signer<'info>,
+    #[account(address = system_program::ID)]    
+    pub system_program: AccountInfo<'info>, }
+
+
+#[derive(Accounts)]
+#[instruction(site_hash: String, comment_id: String)]
+pub struct Downvote<'info> {
+    #[account(mut, seeds=[b"siteScore", site_hash.as_bytes()], bump=siteScore.bump)]
+    pub siteScore: Box<Account<'info, SiteScore>>,
+    #[account(mut)]
+    pub author: Signer<'info>,
+    #[account(address = system_program::ID)]
+    pub system_program: AccountInfo<'info>, }
+
+#[derive(Accounts)]
+#[instruction(site_hash: String, comment_id: String, bump: u8)]
+pub struct DownvoteNew<'info> {
+    #[account(init, payer=author, space= SiteScore::LEN, seeds=[b"siteScore", site_hash.as_bytes()], bump)]
     pub siteScore: Box<Account<'info, SiteScore>>,
     #[account(mut)]
     pub author: Signer<'info>,
@@ -214,8 +233,8 @@ pub struct UpvoteNew<'info> {
 pub struct SiteScore {
     pub site:   String,
     pub bump:   u8,
-    pub votes: [u8; 10188], // 10203
-    // <comment id><upvotes(i16)><downvotes(i16)>
+    pub votes: Vec<u8>, //; 10188
+    // <comment id><upvotes(i16)><downvotes(i16)>, ...
 }
 
     // 32 + 4 + 1 
@@ -223,10 +242,9 @@ pub struct SiteScore {
 #[account]
 pub struct BaseAccount {
     pub program: String,
-    pub bump: u8[],
+    pub bump: u8,
 }
 
-
 impl SiteScore {
-    const LEN: usize = 10240;
+    const LEN: usize = 10188 + 8 + 4 + 1;
 }
