@@ -12,6 +12,7 @@ import {normalize_site,
 
 
 const RenderComment = ({wallet, provider, program}) => {
+    const [programIdl, setProgramIdl]        = useState(null)
     const [replying, setReplying]            = useState(false)
     const [expanded, setExpanded]            = useState(false)
     const [subcomments, set_subcomments]     = useState({})
@@ -45,6 +46,20 @@ const RenderComment = ({wallet, provider, program}) => {
             {command: 'send-to-tab',
              data:    {command: 'close-comment',
                        id:      'comment-' + iframe_id}}) }
+
+    const upvote = (comment) => {
+        chrome.runtime.sendMessage({
+            command: 'send_to_sol',
+            data:     {command:    'upvote',
+                       site:        comment.site,
+                       comment:     comment.id}}) }
+
+    const downvote = (comment) => {
+        chrome.runtime.sendMessage({
+            command: 'send_to_sol',
+            data:     {command:    'downvote',
+                       site:        comment.site,
+                       comment:     comment.id}}) }
     
     const reply = () => {
         setReplying(true)
@@ -140,7 +155,13 @@ const RenderComment = ({wallet, provider, program}) => {
             
             chrome.runtime.sendMessage({
                 command:  "send_comment",
-                id:        iframe_id}) },
+                id:        iframe_id})
+            
+            chrome.storage.local.get().then(
+                storage => {
+                    if (storage.idl_address)
+                        setProgramIdl(
+                            storage.idl_address) }) },
         [])
 
     useEffect(
@@ -196,10 +217,19 @@ const RenderComment = ({wallet, provider, program}) => {
                
                __('p', {className: 'username'},
                   __('strong', {}, comment.username)),
+               
                __('p', {className: 'date'},
                   dayjs(date).format('MMM D, YYYY h:mm A')),
-               __('p', {className: 'comment-message',
+               
+               __('p', {className:  'comment-message',
                         id:         'message-' + comment.id}, comment.message),
+
+               programIdl && __(
+                   'p', {},
+                   __('span', {onClick:    upvote,
+                               className: 'upvote'}, 'up'), ' ',
+                   __('span', {onClick:    downvote,
+                               className: 'downvote'}, 'down'), ' '),
 
                leaving_subcomment == comment.id && __(
                    'div', {className: 'subcomment-form'}, 

@@ -2,7 +2,7 @@ use anchor_lang::prelude::*;
 use anchor_lang::solana_program::system_program;
 use byteorder::{ByteOrder, LittleEndian}; 
 
-declare_id!("G5M7avXmeBtrML6hAcrJWzhvKTyoGXYtUvvsAWX4E91p");
+declare_id!("7kHeoY5kw2XrDhPRw2jBSVYz4YwaKq9MxzmTzktsPdHu");
 
 #[program]
 pub mod mf_default_moderation {
@@ -14,8 +14,13 @@ pub mod mf_default_moderation {
 \"voting\":\"updown\",
 \"scorer\":[\"block\",
   [\"set\", \"scores\", 
-    [\"pull-account\", [\"pda\", [\"lst\", [\"str\", \"siteScore\"], \"site-hash\"], 
-    \"program-id\"], \"program\", [\"str\", \"SiteScore\"]]],
+    [\"memoize\", [\"str-concat\", [\"str\", \"score-acct\"], \"site-hash\"],
+                  [\"*\", 60, 1000],
+                  [\"pull-account\", [\"pda\", [\"lst\", [\"str\", \"siteScore\"], 
+                                                         \"site-hash\"], 
+                                                \"program-id\"], 
+                                     \"program\", 
+                                     [\"str\", \"SiteScore\"]]]],
   [\"set\", \"this-score\", [\"find-value\", \"scores\", \"comment-id\"]]
   [\"if\", \"this-score\",
    [\"block\",
@@ -188,7 +193,8 @@ pub struct Initialize<'info> {
     pub baseAccount: Box<Account<'info, BaseAccount>>,
     #[account(mut)]
     pub author: Signer<'info>,
-    #[account(address = system_program::ID)]    
+    #[account(address = system_program::ID)]
+    /// CHECK: asdfafs
     pub system_program: AccountInfo<'info>, 
 }
 
@@ -200,6 +206,7 @@ pub struct Upvote<'info> {
     #[account(mut)]
     pub author: Signer<'info>,
     #[account(address = system_program::ID)]
+    /// CHECK: asdfafs
     pub system_program: AccountInfo<'info>, }
 
 #[derive(Accounts)]
@@ -210,6 +217,7 @@ pub struct UpvoteNew<'info> {
     #[account(mut)]
     pub author: Signer<'info>,
     #[account(address = system_program::ID)]    
+    /// CHECK: asdfafs
     pub system_program: AccountInfo<'info>, }
 
 
@@ -221,6 +229,7 @@ pub struct Downvote<'info> {
     #[account(mut)]
     pub author: Signer<'info>,
     #[account(address = system_program::ID)]
+    /// CHECK: asdfafs
     pub system_program: AccountInfo<'info>, }
 
 #[derive(Accounts)]
@@ -231,6 +240,7 @@ pub struct DownvoteNew<'info> {
     #[account(mut)]
     pub author: Signer<'info>,
     #[account(address = system_program::ID)]    
+    /// CHECK: asdfafs
     pub system_program: AccountInfo<'info>, }
 
 #[account]

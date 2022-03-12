@@ -168,7 +168,8 @@ pub struct PostReplyUpdateIndex<'info> {
     pub index: Box<Account<'info, CommentsIndex>>,
     #[account(mut)]
     pub author: Signer<'info>,
-    #[account(address = system_program::ID)]    
+    #[account(address = system_program::ID)]
+    /// CHECK: system program
     pub system_program: AccountInfo<'info>, }
 
 
@@ -182,7 +183,9 @@ pub struct PostComment<'info> {
     pub index: Box<Account<'info, CommentsIndex>>,
     #[account(mut)]
     pub author: Signer<'info>,
-    #[account(address = system_program::ID)]    
+    #[account(address = system_program::ID)]
+    /// CHECK: system program
+    
     pub system_program: AccountInfo<'info>, }
 
 #[derive(Accounts)]
@@ -195,6 +198,7 @@ pub struct PostCommentUpdateIndex<'info> {
     #[account(mut)]
     pub author: Signer<'info>,
     #[account(address = system_program::ID)]    
+    /// CHECK: system program
     pub system_program: AccountInfo<'info>, }
 
 #[account]
@@ -239,7 +243,7 @@ impl Reply {
     const LEN: usize = 2048; }
 
 impl CommentsIndex {
-    const LEN: usize = 8 + 32 + 4 + 32 + 4 + 4 + 4 + 8 + 512 + 512 + 1; }
+    const LEN: usize = 8 + 32 + 4 + 32 + 4 + 4 + 4 + 8 + 512 + 512 + 1 + 32; }
 
 impl Comment {
     const LEN: usize = 10240; }

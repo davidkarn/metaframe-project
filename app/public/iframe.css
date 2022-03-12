@@ -97,3 +97,11 @@ body {
     display: inline-block;
     width: calc(100% - 48em - 32px);
 }
+
+.upvote:hover, .downvote:hover {
+    font-weight: bold;
+}
+
+.upvote, .downvote {
+    cursor: pointer;
+}

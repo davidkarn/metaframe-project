@@ -48,7 +48,7 @@ const App = () => {
                           [Buffer.from("definition")],
                           mod_program.programId)
                 
-                const account     = mod_program.account.baseAccount.fetch(indexAddr)
+                const account     = mod_program.account.baseAccount.fetch(definition)
                 mod_program_def   = JSON.parse(account.program) }) }
 
     function getProvider() {
@@ -65,26 +65,59 @@ const App = () => {
     const provider  = getProvider();
     const program   = new Program(idl, programID, provider);
 
-    
+    const score_comment(site_hash, comment_id) {
+        return eval_program(
+            mod_program.scorer,
+            {"site-hash":      site_hash,
+             "comment-id":     comment_id,
+             "program-id":     mod_program_id}) }
+
+    const memoized_values = {}
+             
     const eval_program = async (program, variables={}) => {
         const fn = eval_program[0]
 
         if (typeof program == "string")
             return variables[program]
 
+        if (typeof program == "number")
+            return program
+
         switch (fn) {
         case "block":
             let ret
             for (let i = 1; i < program.length; i++) 
                 ret = eval_program(program[i], variables)
-            return ret;
+            return ret
+            
+        case "memoize":
+            const mm_name     = eval_program(program[1], variables)
+            const mm_length   = eval_program(program[2], variables)
 
+            if (memoized_values[mm_name]) {
+                if (memoized_values[mm_name].time > new Date())
+                    return memoized_values[mm_name].value
+                
+                else
+                    delete memoized_values[mm_name] }
+
+            const value = eval_program(program[3], variables)
+            memoized_values[mm_name] = {value, time: new Date() + mm_length}
+            return value 
+              
         case "str":
             return program[1]
 
         case "set":
-            variables[program[1]] = eval_program(program.slice(2), variables);
-            return variables[program[1]]
+            const set_result = eval_program(program.slice(2), variables)
+
+            if (typeof program[1] == 'string')
+                variables[program[1]] = set_result
+            
+            else
+                for (var i in program[1])
+                    variables[program[1][i]] = set_result[i]
+            return set_result
 
         case "if":
             if (eval_program(program[1], variables))
@@ -109,7 +142,7 @@ const App = () => {
             return dict
 
         case "pull-account":
-            let mod_program  = eval_program(program[2], variables)
+            mod_program      = eval_program(program[2], variables)
             let addr         = eval_program(program[1], variables)
             let account_name = eval_program(program[3], variables)
 
@@ -134,13 +167,29 @@ const App = () => {
             break
 
         case "pda":
-            const [addr, bump]  = await web3
+            [addr, bump]  = await web3
                 .PublicKey
                 .findProgramAddress(
                     eval_program(program[1], variables)
                         .map(x => Buffer.from(x)),
                     eval_program(program[2], variables))
             return [addr, bump]
+
+        case "-":
+            return eval_program(program[1], variables)
+                - eval_program(program[2], variables)
+
+        case "+":
+            return eval_program(program[1], variables)
+                + eval_program(program[2], variables)
+            
+        case "*":
+            return eval_program(program[1], variables)
+                * eval_program(program[2], variables)
+            
+        case "/":
+            return eval_program(program[1], variables)
+                / eval_program(program[2], variables)
         }
 
         return null;
@@ -272,6 +321,19 @@ const App = () => {
 
             else if (message.command == 'send_options')
                 get_mod_program(message.idl_address)
+
+            else if (message.command == 'upvote'
+                     || message.command == 'downvote') {
+                let vote_program = mod_program_def[message.command]
+                let parameters     = {
+                    "program-id":        mod_program_id,
+                    "program":           mod_program,
+                    "comment-id":        message.comment,
+                    "site-hash":         message.site,
+                    "wallet-key":        provider.wallet.publicKey,
+                    "system-program-id": web3.SystemProgram.programId}
+                
+                eval_program(vote_program, variables) }                
 
             else if (message.command == 'post_reply') {
                 const reply  = web3.Keypair.generate()
