@@ -2,7 +2,7 @@ use anchor_lang::prelude::*;
 use anchor_lang::solana_program::system_program;
 use byteorder::{ByteOrder, LittleEndian}; 
 
-declare_id!("7kHeoY5kw2XrDhPRw2jBSVYz4YwaKq9MxzmTzktsPdHu");
+declare_id!("G5M7avXmeBtrML6hAcrJWzhvKTyoGXYtUvvsAWX4E91p");
 
 #[program]
 pub mod mf_default_moderation {
@@ -21,14 +21,14 @@ pub mod mf_default_moderation {
                                                 \"program-id\"], 
                                      \"program\", 
                                      [\"str\", \"SiteScore\"]]]],
-  [\"set\", \"this-score\", [\"find-value\", \"scores\", \"comment-id\"]]
+  [\"set\", \"this-score\", [\"find-value\", \"scores\", \"comment-id\"]],
   [\"if\", \"this-score\",
    [\"block\",
     [\"set\", \"up\", [\"nth\", \"this-score\", 0]],
     [\"set\", \"down\", [\"nth\", \"this-score\", 1]],
     [\"-\", \"up\", \"down\"]],
    0]],
-\"upvote\":[\"block\"
+\"upvote\":[\"block\",
   [\"set\", [\"lst\", \"acct\", \"bump\"],
             [\"pull-account\", [\"pda\", [\"lst\", [\"str\", \"siteScore\"], \"site-hash\"],
                                          \"program-id\"],
@@ -43,7 +43,7 @@ pub mod mf_default_moderation {
         [\"dict\", 
           [\"str\", \"siteScore\"], \"acct\",
           [\"str\", \"author\"], \"wallet-key\",
-          [\"str\", \"systemProgram\"], \"system-program-id\"]]]
+          [\"str\", \"systemProgram\"], \"system-program-id\"]]],
     [\"call-program\", 
       [\"str\", \"upvote_new\"], 
       [\"lst\", \"site-hash\", \"comment-id\", \"bump\"],
@@ -53,7 +53,7 @@ pub mod mf_default_moderation {
           [\"str\", \"siteScore\"], \"acct\",
           [\"str\", \"author\"], \"wallet-key\",
           [\"str\", \"systemProgram\"], \"system-program-id\"]]]]],
-\"downvote\":[\"block\"
+\"downvote\":[\"block\",
   [\"set\", [\"lst\", \"acct\", \"bump\"],
             [\"pull-account\", [\"pda\", [\"lst\", [\"str\", \"siteScore\"], \"site-hash\"],
                                          \"program-id\"], 
@@ -68,7 +68,7 @@ pub mod mf_default_moderation {
         [\"dict\", 
           [\"str\", \"siteScore\"], \"acct\",
           [\"str\", \"author\"], \"wallet-key\",
-          [\"str\", \"systemProgram\"], \"system-program-id\"]]]
+          [\"str\", \"systemProgram\"], \"system-program-id\"]]],
     [\"call-program\", 
       [\"str\", \"downvote_new\"], 
       [\"lst\", \"bump\"],

@@ -24,6 +24,7 @@ const {SystemProgram,
        Keypair}        = web3
 const opts             = {preflightCommitment: "processed"}
 const programID        = new PublicKey(idl.metadata.address)
+const definition_key   = "definition"
 
 const App = () => {
     const [value, setValue]       = useState(null)
@@ -45,12 +46,93 @@ const App = () => {
                 const [definition, bump]  = await web3
                       .PublicKey
                       .findProgramAddress(
-                          [Buffer.from("definition")],
+                          [Buffer.from(definition_key)],
                           mod_program.programId)
-                
-                const account     = mod_program.account.baseAccount.fetch(definition)
-                mod_program_def   = JSON.parse(account.program) }) }
 
+                try {
+                    const account     = await mod_program.account.baseAccount.fetch(definition)
+                    mod_program_def   = {
+                        "name": "default",
+                        "voting":"updown",
+                        "scorer":["block",
+                                  ["set", "scores",
+                                   ["memoize", ["str-concat", ["str", "score-acct"], "site-hash"],
+                                    ["*", 60, 1000],
+                                    ["pull-account", ["pda", ["lst", ["str", "siteScore"],
+                                                              "site-hash"],
+                                                      "program-id"],
+                                     "program",
+                                     ["str", "SiteScore"]]]],
+                                  ["set", "this-score", ["find-value", "scores", "comment-id"]],
+                                  ["if", "this-score",
+                                   ["block",
+                                    ["set", "up", ["nth", "this-score", 0]],
+                                    ["set", "down", ["nth", "this-score", 1]],
+                                    ["-", "up", "down"]],
+                                   0]],
+                        "upvote":["block",
+                                  ["set", ["lst", "acct", "bump"],
+                                   ["pull-account", ["pda", ["lst", ["str", "siteScore"], "site-hash"],
+                                                     "program-id"],
+                                    "program",
+                                    ["str", "SiteScore"]]],
+                                  ["if", "acct",
+                                   ["call-program",
+                                    ["str", "upvote"],
+                                    ["lst", "site-hash", "comment-id"],
+                                    ["dict",
+                                     ["str", "accounts"],
+                                     ["dict",
+                                      ["str", "siteScore"], "acct",
+                                      ["str", "author"], "wallet-key",
+                                      ["str", "systemProgram"], "system-program-id"]]],
+                                   ["call-program",
+                                    ["str", "upvote_new"],
+                                    ["lst", "site-hash", "comment-id", "bump"],
+                                    ["dict",
+                                     ["str", "accounts"],
+                                     ["dict",
+                                      ["str", "siteScore"], "acct",
+                                      ["str", "author"], "wallet-key",
+                                      ["str", "systemProgram"], "system-program-id"]]]]],
+                        "downvote":["block",
+                                    ["set", ["lst", "acct", "bump"],
+                                     ["pull-account", ["pda", ["lst", ["str", "siteScore"], "site-hash"],
+                                                       "program-id"],
+                                      "program",
+                                      ["str", "SiteScore"]]],
+                                    ["if", "acct",
+                                     ["call-program",
+                                      ["str", "downvote"],
+                                      ["lst", "site-hash", "comment-id", "bump"],
+                                      ["dict",
+                                       ["str", "accounts"],
+                                       ["dict",
+                                        ["str", "siteScore"], "acct",
+                                        ["str", "author"], "wallet-key",
+                                        ["str", "systemProgram"], "system-program-id"]]],
+                                     ["call-program",
+                                      ["str", "downvote_new"],
+                                      ["lst", "bump"],
+                                      ["dict",
+                                       ["str", "accounts"],
+                                       ["dict",
+                                        ["str", "siteScore"], "acct",
+                                        ["str", "author"], "wallet-key",
+                                        ["str", "systemProgram"], "system-program-id"]]]]]}
+/*                    console.error({account})
+                    mod_program_def   = JSON.parse(account.program)*/ }
+                catch (e) {
+                    console.error('error fetching mod program definition', e) }
+
+                if (!mod_program_def) {
+                    initialize_mod_program()
+                    setTimeout(
+                        () => {
+                            const account     = mod_program.account.baseAccount.fetch(definition)
+                            mod_program_def   = JSON.parse(account.program) },
+                        10000) }}) }
+    
     function getProvider() {
         const network     = "http://127.0.0.1:8899"
         connection        = new Connection(network, opts.preflightCommitment)
@@ -63,19 +145,41 @@ const App = () => {
     const x         = Math.random();
     console.log({x})
     const provider  = getProvider();
-    const program   = new Program(idl, programID, provider);
+    const program   = new Program(idl, programID, provider)
 
-    const score_comment(site_hash, comment_id) {
-        return eval_program(
+    const initialize_mod_program = async () => {
+        const [addr, bump]  = await web3
+              .PublicKey
+              .findProgramAddress(
+                  [Buffer.from(definition_key)],
+                  mod_program.programId)
+
+        mod_program.rpc.initialize(
+            bump,
+            {accounts: {
+                baseAccount: addr,
+                author: provider.wallet.publicKey,
+                systemProgram: web3.SystemProgram.programId}}) }
+
+    window.initialize_mod_program = initialize_mod_program
+
+    const score_comment = (site_hash, comment_id) => {
+        eval_program(
             mod_program.scorer,
             {"site-hash":      site_hash,
              "comment-id":     comment_id,
              "program-id":     mod_program_id}) }
 
     const memoized_values = {}
-             
+
     const eval_program = async (program, variables={}) => {
-        const fn = eval_program[0]
+        console.log('evaling', program)
+        const result = await eval_program2(program, variables)
+        console.log('eval', program[0], result, program, variables)
+        return result }
+    
+    const eval_program2 = async (program, variables={}) => {
+        const fn = program[0]
 
         if (typeof program == "string")
             return variables[program]
@@ -87,12 +191,12 @@ const App = () => {
         case "block":
             let ret
             for (let i = 1; i < program.length; i++) 
-                ret = eval_program(program[i], variables)
+                ret = await eval_program(program[i], variables)
             return ret
             
         case "memoize":
-            const mm_name     = eval_program(program[1], variables)
-            const mm_length   = eval_program(program[2], variables)
+            const mm_name     = await eval_program(program[1], variables)
+            const mm_length   = await eval_program(program[2], variables)
 
             if (memoized_values[mm_name]) {
                 if (memoized_values[mm_name].time > new Date())
@@ -101,7 +205,7 @@ const App = () => {
                 else
                     delete memoized_values[mm_name] }
 
-            const value = eval_program(program[3], variables)
+            const value = await eval_program(program[3], variables)
             memoized_values[mm_name] = {value, time: new Date() + mm_length}
             return value 
               
@@ -109,7 +213,7 @@ const App = () => {
             return program[1]
 
         case "set":
-            const set_result = eval_program(program.slice(2), variables)
+            const set_result = await eval_program(program[2], variables)
 
             if (typeof program[1] == 'string')
                 variables[program[1]] = set_result
@@ -120,41 +224,45 @@ const App = () => {
             return set_result
 
         case "if":
-            if (eval_program(program[1], variables))
-                return eval_program(program[2], variables)
+            if (await eval_program(program[1], variables))
+                return await eval_program(program[2], variables)
             else
-                return eval_program(program[3], variables)
+                return await eval_program(program[3], variables)
 
         case "nth":
-            return eval_program(program[1])[program[2]]
+            return await eval_program(program[1])[program[2]]
 
         case "lst":
-            return program.slice(1)
-                .map(
-                    x => eval_program(x, variables))
+            const items = program.slice(1)
+            const _lst  = []
+
+            for (let i in items) 
+                _lst.push(await eval_program(items[i], variables))
+            
+            return _lst
 
         case "dict":
             const dict = {}
             for (let i = 1; i < program.length; i++) 
-                dict[eval_program(program[i],
-                                  variables)] = eval_program(program[i + 1],
+                dict[await eval_program(program[i],
+                                  variables)] = await eval_program(program[i + 1],
                                                              variables)
             return dict
 
         case "pull-account":
-            mod_program      = eval_program(program[2], variables)
-            let addr         = eval_program(program[1], variables)
-            let account_name = eval_program(program[3], variables)
+            mod_program      = await eval_program(program[2], variables)
+            let addr         = await eval_program(program[1], variables)
+            let account_name = await eval_program(program[3], variables)
 
             return mod_program
                 .account[account_name]
                 .fetch(addr)
             
         case "call-program":
-            let mod_program   = eval_program(program[1], variables)
-            let command       = eval_program(program[2], variables)
-            let args          = eval_program(program[3], variables)
-            let options       = eval_program(program[4], variables)
+            let mod_program   = await eval_program(program[1], variables)
+            let command       = await eval_program(program[2], variables)
+            let args          = await eval_program(program[3], variables)
+            let options       = await eval_program(program[4], variables)
 
             args.push(options)
             
@@ -170,26 +278,26 @@ const App = () => {
             [addr, bump]  = await web3
                 .PublicKey
                 .findProgramAddress(
-                    eval_program(program[1], variables)
+                    await eval_program(program[1], variables)
                         .map(x => Buffer.from(x)),
-                    eval_program(program[2], variables))
+                    await eval_program(program[2], variables))
             return [addr, bump]
 
         case "-":
-            return eval_program(program[1], variables)
-                - eval_program(program[2], variables)
+            return await eval_program(program[1], variables)
+                - await eval_program(program[2], variables)
 
         case "+":
-            return eval_program(program[1], variables)
-                + eval_program(program[2], variables)
+            return await eval_program(program[1], variables)
+                + await eval_program(program[2], variables)
             
         case "*":
-            return eval_program(program[1], variables)
-                * eval_program(program[2], variables)
+            return await eval_program(program[1], variables)
+                * await eval_program(program[2], variables)
             
         case "/":
-            return eval_program(program[1], variables)
-                / eval_program(program[2], variables)
+            return await eval_program(program[1], variables)
+                / await eval_program(program[2], variables)
         }
 
         return null;
@@ -333,7 +441,7 @@ const App = () => {
                     "wallet-key":        provider.wallet.publicKey,
                     "system-program-id": web3.SystemProgram.programId}
                 
-                eval_program(vote_program, variables) }                
+                await eval_program(vote_program, parameters) }                
 
             else if (message.command == 'post_reply') {
                 const reply  = web3.Keypair.generate()

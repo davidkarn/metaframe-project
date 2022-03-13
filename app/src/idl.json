@@ -292,23 +292,19 @@
       }
     }
   ],
-  "types": [
+  "errors": [
     {
-      "name": "ErrorCode",
-      "type": {
-        "kind": "enum",
-        "variants": [
-          {
-            "name": "UsernameTooLong"
-          },
-          {
-            "name": "CommentTooLong"
-          }
-        ]
-      }
+      "code": 6000,
+      "name": "UsernameTooLong",
+      "msg": "The provided username should be 48 characters long maximum."
+    },
+    {
+      "code": 6001,
+      "name": "CommentTooLong",
+      "msg": "The provided comment should be 1024 characters long maximum."
     }
   ],
   "metadata": {
-    "address": "2r78ZhLbrEckmrENcwMWDKKwR3kw6nLf7U8PU3UZQfjL"
+    "address": "6FFmFrZMQxH3DB2VGwVaAR13tEgvmfyHVwhMVooot9VG"
   }
 }

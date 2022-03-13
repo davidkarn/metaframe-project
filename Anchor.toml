@@ -1,7 +1,7 @@
 [features]
 seeds = false
 [programs.localnet]
-mysolanaapp = "2r78ZhLbrEckmrENcwMWDKKwR3kw6nLf7U8PU3UZQfjL"
+mysolanaapp = "6FFmFrZMQxH3DB2VGwVaAR13tEgvmfyHVwhMVooot9VG"
 
 [registry]
 url = "https://anchor.projectserum.com"
