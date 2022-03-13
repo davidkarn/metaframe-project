@@ -56,13 +56,15 @@ const App = () => {
                         "voting":"updown",
                         "scorer":["block",
                                   ["set", "scores",
-                                   ["memoize", ["str-concat", ["str", "score-acct"], "site-hash"],
+                                   ["memoize",
+                                    ["str-concat", ["str", "score-acct"], "site-hash"],
                                     ["*", 60, 1000],
-                                    ["pull-account", ["pda", ["lst", ["str", "siteScore"],
+                                    ["pull-account", ["nth", ["pda", ["lst", ["str", "siteScore"],
                                                               "site-hash"],
-                                                      "program-id"],
+                                                              "program-id"],
+                                                      1],
                                      "program",
-                                     ["str", "SiteScore"]]]],
+                                     ["str", "siteScore"]]]],
                                   ["set", "this-score", ["find-value", "scores", "comment-id"]],
                                   ["if", "this-score",
                                    ["block",
@@ -71,11 +73,14 @@ const App = () => {
                                     ["-", "up", "down"]],
                                    0]],
                         "upvote":["block",
-                                  ["set", ["lst", "acct", "bump"],
-                                   ["pull-account", ["pda", ["lst", ["str", "siteScore"], "site-hash"],
-                                                     "program-id"],
+                                  ["set", ["addr", "bump"],
+                                   ["pda", ["lst", ["str", "siteScore"], "site-hash"],
+                                    "program-id"]],
+                                  ["set", "acct",
+                                   ["pull-account",
+                                    "addr",
                                     "program",
-                                    ["str", "SiteScore"]]],
+                                    ["str", "siteScore"]]],
                                   ["if", "acct",
                                    ["call-program",
                                     ["str", "upvote"],
@@ -92,7 +97,7 @@ const App = () => {
                                     ["dict",
                                      ["str", "accounts"],
                                      ["dict",
-                                      ["str", "siteScore"], "acct",
+                                      ["str", "siteScore"], "addr",
                                       ["str", "author"], "wallet-key",
                                       ["str", "systemProgram"], "system-program-id"]]]]],
                         "downvote":["block",
@@ -100,7 +105,7 @@ const App = () => {
                                      ["pull-account", ["pda", ["lst", ["str", "siteScore"], "site-hash"],
                                                        "program-id"],
                                       "program",
-                                      ["str", "SiteScore"]]],
+                                      ["str", "siteScore"]]],
                                     ["if", "acct",
                                      ["call-program",
                                       ["str", "downvote"],
@@ -180,9 +185,12 @@ const App = () => {
     
     const eval_program2 = async (program, variables={}) => {
         const fn = program[0]
-
-        if (typeof program == "string")
-            return variables[program]
+        let addr, bump
+        if (typeof program == "string") {
+            if (variables[program] === undefined)
+                throw "Variable not defined: '" + program + "'"
+            else
+                return variables[program] }
 
         if (typeof program == "number")
             return program
@@ -250,13 +258,17 @@ const App = () => {
             return dict
 
         case "pull-account":
-            mod_program      = await eval_program(program[2], variables)
-            let addr         = await eval_program(program[1], variables)
-            let account_name = await eval_program(program[3], variables)
+            try {
+                mod_program      = await eval_program(program[2], variables)
+                let addr         = await eval_program(program[1], variables)
+                let account_name = await eval_program(program[3], variables)
 
-            return mod_program
-                .account[account_name]
-                .fetch(addr)
+                return await mod_program
+                    .account[account_name]
+                    .fetch(addr) }
+            
+            catch (e) {
+                return null }
             
         case "call-program":
             let mod_program   = await eval_program(program[1], variables)
@@ -278,7 +290,7 @@ const App = () => {
             [addr, bump]  = await web3
                 .PublicKey
                 .findProgramAddress(
-                    await eval_program(program[1], variables)
+                    (await eval_program(program[1], variables))
                         .map(x => Buffer.from(x)),
                     await eval_program(program[2], variables))
             return [addr, bump]
@@ -442,7 +454,7 @@ const App = () => {
                     "system-program-id": web3.SystemProgram.programId}
                 
                 await eval_program(vote_program, parameters) }                
-
+        
             else if (message.command == 'post_reply') {
                 const reply  = web3.Keypair.generate()
 

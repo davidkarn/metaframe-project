@@ -226,9 +226,9 @@ const RenderComment = ({wallet, provider, program}) => {
 
                programIdl && __(
                    'p', {},
-                   __('span', {onClick:    upvote,
+                   __('span', {onClick:   () => upvote(comment),
                                className: 'upvote'}, 'up'), ' ',
-                   __('span', {onClick:    downvote,
+                   __('span', {onClick:   () => downvote(comment),
                                className: 'downvote'}, 'down'), ' '),
 
                leaving_subcomment == comment.id && __(
