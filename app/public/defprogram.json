@@ -54,12 +54,7 @@
         },
         {
           "name": "commentId",
-          "type": {
-            "array": [
-              "u8",
-              32
-            ]
-          }
+          "type": "string"
         },
         {
           "name": "bump",
@@ -93,12 +88,7 @@
         },
         {
           "name": "commentId",
-          "type": {
-            "array": [
-              "u8",
-              32
-            ]
-          }
+          "type": "string"
         }
       ]
     },
@@ -128,12 +118,7 @@
         },
         {
           "name": "commentId",
-          "type": {
-            "array": [
-              "u8",
-              32
-            ]
-          }
+          "type": "string"
         },
         {
           "name": "bump",
@@ -167,12 +152,7 @@
         },
         {
           "name": "commentId",
-          "type": {
-            "array": [
-              "u8",
-              32
-            ]
-          }
+          "type": "string"
         }
       ]
     }

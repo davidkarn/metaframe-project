@@ -83,16 +83,18 @@ const App = () => {
                                     ["str", "siteScore"]]],
                                   ["if", "acct",
                                    ["call-program",
+                                    "program",
                                     ["str", "upvote"],
                                     ["lst", "site-hash", "comment-id"],
                                     ["dict",
                                      ["str", "accounts"],
                                      ["dict",
-                                      ["str", "siteScore"], "acct",
+                                      ["str", "siteScore"], "addr",
                                       ["str", "author"], "wallet-key",
                                       ["str", "systemProgram"], "system-program-id"]]],
                                    ["call-program",
-                                    ["str", "upvote_new"],
+                                    "program",
+                                    ["str", "upvoteNew"],
                                     ["lst", "site-hash", "comment-id", "bump"],
                                     ["dict",
                                      ["str", "accounts"],
@@ -101,30 +103,35 @@ const App = () => {
                                       ["str", "author"], "wallet-key",
                                       ["str", "systemProgram"], "system-program-id"]]]]],
                         "downvote":["block",
-                                    ["set", ["lst", "acct", "bump"],
-                                     ["pull-account", ["pda", ["lst", ["str", "siteScore"], "site-hash"],
-                                                       "program-id"],
-                                      "program",
-                                      ["str", "siteScore"]]],
-                                    ["if", "acct",
-                                     ["call-program",
-                                      ["str", "downvote"],
-                                      ["lst", "site-hash", "comment-id", "bump"],
-                                      ["dict",
-                                       ["str", "accounts"],
-                                       ["dict",
-                                        ["str", "siteScore"], "acct",
-                                        ["str", "author"], "wallet-key",
-                                        ["str", "systemProgram"], "system-program-id"]]],
-                                     ["call-program",
-                                      ["str", "downvote_new"],
-                                      ["lst", "bump"],
-                                      ["dict",
-                                       ["str", "accounts"],
-                                       ["dict",
-                                        ["str", "siteScore"], "acct",
-                                        ["str", "author"], "wallet-key",
-                                        ["str", "systemProgram"], "system-program-id"]]]]]}
+                                  ["set", ["addr", "bump"],
+                                   ["pda", ["lst", ["str", "siteScore"], "site-hash"],
+                                    "program-id"]],
+                                  ["set", "acct",
+                                   ["pull-account",
+                                    "addr",
+                                    "program",
+                                    ["str", "siteScore"]]],
+                                  ["if", "acct",
+                                   ["call-program",
+                                    "program",
+                                    ["str", "downvote"],
+                                    ["lst", "site-hash", "comment-id"],
+                                    ["dict",
+                                     ["str", "accounts"],
+                                     ["dict",
+                                      ["str", "siteScore"], "addr",
+                                      ["str", "author"], "wallet-key",
+                                      ["str", "systemProgram"], "system-program-id"]]],
+                                   ["call-program",
+                                    "program",
+                                    ["str", "downvoteNew"],
+                                    ["lst", "site-hash", "comment-id", "bump"],
+                                    ["dict",
+                                     ["str", "accounts"],
+                                     ["dict",
+                                      ["str", "siteScore"], "addr",
+                                      ["str", "author"], "wallet-key",
+                                      ["str", "systemProgram"], "system-program-id"]]]]]}
 /*                    console.error({account})
                     mod_program_def   = JSON.parse(account.program)*/ }
                 catch (e) {
@@ -251,10 +258,10 @@ const App = () => {
 
         case "dict":
             const dict = {}
-            for (let i = 1; i < program.length; i++) 
+            for (let i = 1; i < program.length; i += 2) 
                 dict[await eval_program(program[i],
-                                  variables)] = await eval_program(program[i + 1],
-                                                             variables)
+                                        variables)] = await eval_program(program[i + 1],
+                                                                         variables)
             return dict
 
         case "pull-account":
@@ -277,7 +284,7 @@ const App = () => {
             let options       = await eval_program(program[4], variables)
 
             args.push(options)
-            
+            console.log('call-p', {mod_program, command, args, options, program, variables})
             return await mod_program.rpc[command].apply(
                 mod_program.rpc[command],
                 args)

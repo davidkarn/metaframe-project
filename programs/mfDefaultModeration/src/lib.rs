@@ -84,17 +84,18 @@ pub mod mf_default_moderation {
         Ok(())
     }
 
-    pub fn upvote_new(ctx: Context<UpvoteNew>, site_hash: String, comment_id: [u8; 32], bump: u8) -> ProgramResult {
+    pub fn upvote_new(ctx: Context<UpvoteNew>, site_hash: String, comment_id: String, bump: u8) -> ProgramResult {
         let site_score: &mut Account<SiteScore> = &mut ctx.accounts.siteScore;
         let author: &Signer                     = &ctx.accounts.author;
 
 
-        let mut init_votes: Vec<u8> = vec![0; 10188];
+        let mut init_votes: Vec<u8> = vec![0; 10084];
+        let comment_bytes           = comment_id.as_bytes();
 
-        for i in 0..32 {
-            init_votes[i] = comment_id[i]; }
+        for i in 0..15 {
+            init_votes[i] = comment_bytes[i]; }
         
-        init_votes[33] = 1;
+        init_votes[16] = 1;
         
         site_score.site  = site_hash;
         site_score.bump  = bump;
@@ -102,50 +103,62 @@ pub mod mf_default_moderation {
 
         Ok(()) }
 
-    pub fn upvote(ctx: Context<UpvoteNew>, site_hash: String, comment_id: [u8; 32]) -> ProgramResult {
+    pub fn upvote(ctx: Context<Upvote>, site_hash: String, comment_id: String) -> ProgramResult {
+       msg!("starting");
         let site_score: &mut Account<SiteScore> = &mut ctx.accounts.siteScore;
         let author: &Signer                     = &ctx.accounts.author;
 
-        let blank_comment: [u8; 32]      = [0; 32];
-        let mut found_comment             = false;
+        let blank_comment: [u8; 15]    = [0; 15];
+        let mut found_comment          = false;
+        let comment_bytes              = comment_id.as_bytes();
+        let mut comment: [u8; 15]      = [0; 15];
+msg!("gothere");
+        for i in 0..15 { // maybe theres a better way to do this
+            comment[i] = comment_bytes[i]; }
         
-        for i in 0..(10188 / 36) {
-            let j = i * 36;
+        for i in 0..(10184 / 19) {
+            let j = i * 19;
+            msg!("{} {}", j, i);
+                
             
-            if site_score.votes[(j)..(j + 32)] == comment_id {
+            if site_score.votes[(j)..(j + 15)] == comment {
                 msg!("found the comment");
                 found_comment           = true;
                 let mut current_upvotes = LittleEndian::read_u16(
-                    &site_score.votes[(j)..(j + 34)]);
+                    &site_score.votes[(j)..(j + 27)]);
                 
                 current_upvotes        += 1;
                 let upvotes_bytes       = current_upvotes.to_le_bytes();
                 
-                site_score.votes[j + 32]      = upvotes_bytes[0];
-                site_score.votes[j + 33]      = upvotes_bytes[1]; }
+                site_score.votes[j + 15]      = upvotes_bytes[0];
+                site_score.votes[j + 16]      = upvotes_bytes[1];
+                break; }
             
-            else if site_score.votes[(j)..(j + 32)] == blank_comment {
+            else if site_score.votes[(j)..(j + 15)] == blank_comment {
                 found_comment = true;
-                for k in 0..32 {
-                    site_score.votes[j + k]  = comment_id[k];
-                    site_score.votes[j + 33] = 1; }}}
+                for k in 0..15 {
+                    site_score.votes[j + k]  = comment[k];
+                    site_score.votes[j + 16] = 1; }
+
+                break;  }}
                     
         
         site_score.site  = site_hash;
 
         Ok(()) }
 
-    pub fn downvote_new(ctx: Context<UpvoteNew>, site_hash: String, comment_id: [u8; 32], bump: u8) -> ProgramResult {
+    pub fn downvote_new(ctx: Context<DownvoteNew>, site_hash: String, comment_id: String, bump: u8) -> ProgramResult {
         let site_score: &mut Account<SiteScore> = &mut ctx.accounts.siteScore;
         let author: &Signer                     = &ctx.accounts.author;
 
 
-        let mut init_votes: Vec<u8> = vec![0; 10188];
+        let mut init_votes: Vec<u8> = vec![0; 10084];
+        let comment_bytes           = comment_id.as_bytes();
 
-        for i in 0..32 {
-            init_votes[i] = comment_id[i]; }
+        for i in 0..15 {
+            init_votes[i] = comment_bytes[i]; }
         
-        init_votes[35] = 1;
+        init_votes[18] = 1;
         
         site_score.site  = site_hash;
         site_score.bump  = bump;
@@ -153,33 +166,42 @@ pub mod mf_default_moderation {
 
         Ok(()) }
 
-    pub fn downvote(ctx: Context<UpvoteNew>, site_hash: String, comment_id: [u8; 32]) -> ProgramResult {
+    pub fn downvote(ctx: Context<Downvote>, site_hash: String, comment_id: String) -> ProgramResult {
         let site_score: &mut Account<SiteScore> = &mut ctx.accounts.siteScore;
         let author: &Signer                     = &ctx.accounts.author;
 
-        let blank_comment: [u8; 32]      = [0; 32];
-        let mut found_comment             = false;
+
+        let blank_comment: [u8; 15]    = [0; 15];
+        let mut found_comment          = false;
+        let comment_bytes              = comment_id.as_bytes();
+        let mut comment: [u8; 15]      = [0; 15];
+msg!("gothere");
+        for i in 0..15 { // maybe theres a better way to do this
+            comment[i] = comment_bytes[i]; }
         
-        for i in 0..(10188 / 36) {
-            let j = i * 36;
+        for i in 0..(10184 / 19) {
+            let j = i * 19;
+            msg!("{} {}", j, i);
             
-            if site_score.votes[(j)..(j + 32)] == comment_id {
+            if site_score.votes[(j)..(j + 15)] == comment {
                 msg!("found the comment");
                 found_comment             = true;
                 let mut current_downvotes = LittleEndian::read_u16(
-                    &site_score.votes[(j)..(j + 34)]);
+                    &site_score.votes[(j)..(j + 17)]);
                 
                 current_downvotes        -= 1;
                 let downvote_bytes        = current_downvotes.to_le_bytes();
                 
-                site_score.votes[j + 34]      = downvote_bytes[0];
-                site_score.votes[j + 35]      = downvote_bytes[1]; }
+                site_score.votes[j + 17]      = downvote_bytes[0];
+                site_score.votes[j + 18]      = downvote_bytes[1];
+                break; }
             
-            else if site_score.votes[(j)..(j + 32)] == blank_comment {
+            else if site_score.votes[(j)..(j + 15)] == blank_comment {
                 found_comment = true;
-                for k in 0..32 {
-                    site_score.votes[j + k]  = comment_id[k];
-                    site_score.votes[j + 33] = 1; }}}
+                for k in 0..15 {
+                    site_score.votes[j + k]  = comment[k];
+                    site_score.votes[j + 18] = 1; }
+                break; }}
                             
         site_score.site  = site_hash;
 
