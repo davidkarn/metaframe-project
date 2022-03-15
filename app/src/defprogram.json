@@ -1,6 +1,6 @@
 {
   "version": "0.1.0",
-  "name": "mf_default_moderation",
+  "name": "mf_moderation",
   "instructions": [
     {
       "name": "initialize",
@@ -27,6 +27,190 @@
           "type": "u8"
         }
       ]
+    },
+    {
+      "name": "upvote",
+      "accounts": [
+        {
+          "name": "vote",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "votes",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "author",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
+          "name": "voteProgram",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": [
+        {
+          "name": "commentId",
+          "type": "string"
+        },
+        {
+          "name": "voter",
+          "type": "publicKey"
+        },
+        {
+          "name": "voteBump",
+          "type": "u8"
+        }
+      ]
+    },
+    {
+      "name": "downvote",
+      "accounts": [
+        {
+          "name": "vote",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "votes",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "author",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
+          "name": "voteProgram",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": [
+        {
+          "name": "commentId",
+          "type": "string"
+        },
+        {
+          "name": "voter",
+          "type": "publicKey"
+        },
+        {
+          "name": "voteBump",
+          "type": "u8"
+        }
+      ]
+    },
+    {
+      "name": "upvoteNew",
+      "accounts": [
+        {
+          "name": "vote",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "votes",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "author",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
+          "name": "voteProgram",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": [
+        {
+          "name": "commentId",
+          "type": "string"
+        },
+        {
+          "name": "voter",
+          "type": "publicKey"
+        },
+        {
+          "name": "voteBump",
+          "type": "u8"
+        },
+        {
+          "name": "votesBump",
+          "type": "u8"
+        }
+      ]
+    },
+    {
+      "name": "downvoteNew",
+      "accounts": [
+        {
+          "name": "vote",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "votes",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "author",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
+          "name": "voteProgram",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": [
+        {
+          "name": "commentId",
+          "type": "string"
+        },
+        {
+          "name": "voter",
+          "type": "publicKey"
+        },
+        {
+          "name": "voteBump",
+          "type": "u8"
+        },
+        {
+          "name": "votesBump",
+          "type": "u8"
+        }
+      ]
     }
   ],
   "accounts": [
@@ -45,9 +229,57 @@
           }
         ]
       }
+    },
+    {
+      "name": "Vote",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "commentId",
+            "type": "string"
+          },
+          {
+            "name": "voter",
+            "type": "publicKey"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          },
+          {
+            "name": "direction",
+            "type": "bool"
+          }
+        ]
+      }
+    },
+    {
+      "name": "Votes",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "commentId",
+            "type": "string"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          },
+          {
+            "name": "upCount",
+            "type": "i16"
+          },
+          {
+            "name": "downCount",
+            "type": "i16"
+          }
+        ]
+      }
     }
   ],
   "metadata": {
-    "address": "G5M7avXmeBtrML6hAcrJWzhvKTyoGXYtUvvsAWX4E91p"
+    "address": "3MNoKDB3fqwZLmVaHyEV6S2YuW4bQqhyPw8KoqUTZMXb"
   }
 }
