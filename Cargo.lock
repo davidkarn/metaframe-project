@@ -743,6 +743,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "mfModeration"
+version = "0.1.0"
+dependencies = [
+ "anchor-lang",
+]
+
+[[package]]
 name = "mysolanaapp"
 version = "0.1.0"
 dependencies = [

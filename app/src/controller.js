@@ -175,9 +175,9 @@ const App = () => {
 
     window.initialize_mod_program = initialize_mod_program
 
-    const score_comment = (site_hash, comment_id) => {
-        eval_program(
-            mod_program.scorer,
+    const score_comment = async (site_hash, comment_id) => {
+        return await eval_program(
+            mod_program_def.scorer,
             {"site-hash":      site_hash,
              "comment-id":     comment_id,
              "program-id":     mod_program_id}) }
@@ -386,10 +386,21 @@ const App = () => {
                         bytes: bs58.encode(Buffer.from(md5(message.site)
                                                        /*+ md5(message.path)*/))}}])
 
-                    .then(comments => {
+                    .then(async (comments) => {
                         console.log('fetched', comments)
+                        const scores = {}
+
+                        for (let i in comments) {
+                            const comment = comments[i]
+                            const id      = bs58.encode(comment.publicKey._bn.words)
+                            const score   = await score_comment(comment.site, id)
+                            scores[id]    = score }
+
+                        console.log({scores})
+                        
                         send_to_backend({command:  'forward_comments',
                                          comments:  comments,
+                                         score:     scores,
                                          site:      message.site,
                                          path:      message.path,
                                          tab_id:    message.tab_id}) }) }
