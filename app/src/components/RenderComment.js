@@ -109,7 +109,7 @@ const RenderComment = ({wallet, provider, program}) => {
                             onChange:    (e) => set_reply_message(e.target.value)}),
             __('button', {className: 'submit-btn',
                           onClick:    send_reply},
-               "Post Reply")) }
+               "Post Reply")) }            
 
     const open_subcomment_form = () => {
         const selection        = window.getSelection()
@@ -209,7 +209,7 @@ const RenderComment = ({wallet, provider, program}) => {
                 chrome.runtime.onMessage.removeListener(chrome_listener) }},
         [iframe_id, replies, comment, subcomments])
 
-    const render_comment = (comment) => {
+    const render_comment = (comment, root_comment) => {
         return __(
             'div', {className: 'a-comment-wrapper'},
             __('div', {className: 'a-comment',
@@ -224,7 +224,9 @@ const RenderComment = ({wallet, provider, program}) => {
                __('p', {className:  'comment-message',
                         id:         'message-' + comment.id}, comment.message),
 
-               programIdl && __(
+               programIdl
+               && (comment.voting == 'updown' || root_comment.voting == 'updown')
+               && __(
                    'p', {},
                    __('span', {className: 'score'},
                       comment.score), ' ', 
@@ -270,14 +272,14 @@ const RenderComment = ({wallet, provider, program}) => {
     else 
         return __('div', {id: 'comment-form'},
                   __('div', {id: 'top-part'},
-                     render_comment(comment),
+                     render_comment(comment, comment),
 
                      replying && replies[comment.id].length && __(
                          'div', {id: 'comment-replies'},
                          __('strong', {}, "Replies"),
                          
                          replies[comment.id]
-                             .map(render_comment)),
+                             .map((c) => render_comment(c, comment))),
                      
                      replying && reply_form()),
                   

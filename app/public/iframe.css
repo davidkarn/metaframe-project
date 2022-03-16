@@ -55,8 +55,8 @@ body {
 
 .form-control {
     width: 100%;
-    border: 2px solid #77559e88;
-    border-radius: 5px;
+    border: 1px solid #CF1D5B;
+    border-radius: 0px;
     padding: 8px;
     color: #444;
     margin-bottom: 12px;
@@ -64,13 +64,30 @@ body {
 
 .submit-btn {
     border: 0;
-    background:  #77559eff;
-    border-radius: 5px;
-    padding: 8px;
+    background:  #CF1D5B;
+    border-radius: 0px;
+    padding: 8px 12px;    
     cursor: pointer;
     color: white;
     font-weight: bold;
-    display: block; }
+    margin-right: 18px;
+    display: inline; }
+
+.text-btn {
+    font-weight: bold;
+    color: #CF1D5B;
+    cursor: pointer;
+}
+
+.form-control:focus, .form-control:focus-visible {
+    outline: none;
+    border: 2px solid #ff2470;
+    border-radius: 0px;
+}
+input.form-control:focus, input.form-control:focus-visible {
+    margin:0;
+    margin-bottom: 10px;
+}    
 
 
 #comment-replies {
@@ -104,4 +121,9 @@ body {
 
 .upvote, .downvote {
     cursor: pointer;
+}
+
+
+#comment-form {
+    padding: 18px;
 }

@@ -51,19 +51,36 @@ const LeaveComment = ({wallet, provider, program}) => {
                       message,
                       site,
                       path,
-                      node: clean_node(node)}}) }
+                      node: clean_node(node)}})
+
+        chrome.runtime.sendMessage(
+            {command: 'send-to-tab',
+             data:    {command: 'close-window'}}) }
+
+    const close = () => {
+        chrome.runtime.sendMessage(
+            {command: 'send-to-tab',
+             data:    {command: 'close-window',
+                       id:      'comment-' + iframe_id}}) }
+
                                                 
     return __('div', {id: 'comment-form'},
               __('input', {type:          'text',
                            placeholder:   'name',
                            value:          name,
+                           className:     'form-control',
                            onChange:      (e) => setName(e.target.value)}),
               
               __('textarea', {placeholder:   'message',
+                              className:     'form-control',
+                              style:       {height: 'calc(100vh - 124px)'},
                               value:          message,
                               onChange:      (e) => setMessage(e.target.value)}),
-
-              __('button', {onClick: submitComment},
-                 "Post")) }
+              __('div', {style: {}}, 
+                 __('button', {onClick: submitComment, className: 'submit-btn'},
+                    "Post Comment"),
+                 " ",
+                 __('span', {className: 'text-btn',
+                             onClick:    close}, "Cancel"))) }
 
 export default LeaveComment

@@ -735,6 +735,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "mfAntiElevatorModeration"
+version = "0.1.0"
+dependencies = [
+ "anchor-lang",
+]
+
+[[package]]
 name = "mfDefaultModeration"
 version = "0.1.0"
 dependencies = [

@@ -5,15 +5,15 @@
     background-color: white;
 }
 
-.metaframe-comment-iframe {
+.metaframe-iframe {
     box-shadow: 10px 15px 40px 1px rgb(0 0 0 / 10%), 0  1px 4px 0 rgb(5 5 0 / 15%);
     border: 0;
 }
 
 
 .mf-hl-selection {
-    background-color: #a267e644;
-    border: 3px solid #a267e600;
+    background-color: #629cde44;
+    border: 3px solid #629cde00;
     margin-left: -3px;
     margin-right: -3px;
 }

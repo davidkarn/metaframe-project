@@ -53,100 +53,7 @@ const App = () => {
                 mod_program_def_id = definition
                 try {
                     const account     = await mod_program.account.baseAccount.fetch(definition)
-                    mod_program_def   = {
-                        "name":"vote program 2",
-                        "voting":"updown",
-                        "scorer":["block",
-                                  ["set", ["acct", "bump"],
-                                   ["pda", ["lst", ["str", "votes"], "comment-id"],
-                                    "program-id"]],
-                                  ["set", "scores",
-                                   ["pull-account", "acct",
-                                    "program",
-                                    ["str", "votes"]]],
-                                  ["if", "scores",
-                                   ["block",
-                                    ["set", "up", [".", "scores", ["str", "upCount"]]],
-                                    ["set", "down", [".", "scores", ["str", "downCount"]]],
-                                    ["if", [">", "down", 10],
-                                     -1,
-                                     ["/", ["+", "up", "down"], "up"]]],
-                                   0]],
-                        "upvote":["block",
-                                  ["set", ["vote-addr", "vote-bump"],
-                                   ["pda", ["lst", ["str", "vote"], ["bs58-encode", "wallet-key"], "comment-id"],
-                                    "program-id"]],
-                                  ["set", ["votes-addr", "votes-bump"],
-                                   ["pda", ["lst", ["str", "votes"], "comment-id"],
-                                    "program-id"]],
-                                  ["set", "acct",
-                                   ["pull-account", "votes-addr", "program", ["str", "votes"]]],
-                                  ["if", "acct",
-                                   ["call-program",
-                                    "program",                                    
-                                    ["str", "upvote"],
-                                    ["lst", "comment-id", ["bs58-encode", "wallet-key"], "vote-bump"],
-                                    ["dict",
-                                     ["str", "accounts"],
-                                     ["dict",
-                                      ["str", "vote"], "vote-addr",
-                                      ["str", "votes"], "votes-addr",
-                                      ["str", "author"], "wallet-key",
-                                      ["str", "voteProgram"], "definition-id",
-                                      ["str", "systemProgram"], "system-program-id"],
-                                     ["str", "signers"],
-                                     ["lst", "wallet-key", "definition-id"]]],
-                                   ["call-program",
-                                    "program",
-                                    ["str", "upvoteNew"],
-                                    ["lst", "comment-id", ["bs58-encode", "wallet-key"], "vote-bump", "votes-bump"],
-                                    ["dict",
-                                     ["str", "accounts"],
-                                     ["dict",
-                                      ["str", "vote"], "vote-addr",
-                                      ["str", "votes"], "votes-addr",
-                                      ["str", "author"], "wallet-key",
-                                      ["str", "systemProgram"], "system-program-id"]]]]],
-                        "downvote":["block",
-                                    ["set", ["vote-addr", "vote-bump"],
-                                     ["pda", ["lst", ["str", "votes"], ["bs58-encode", "wallet-key"], "comment-id"],
-                                      "program-id"]],
-                                    ["set", ["votes-addr", "votes-bump"],
-                                     ["pda", ["lst", ["str", "votes"], "comment-id"],
-                                      "program-id"]],
-                                    ["set", "acct",
-                                     ["pull-account", "votes-addr", "program", ["str", "votes"]]],
-                                    ["if", "acct",
-                                     ["call-program",
-                                      "program",
-                                      ["str", "downvote"],
-                                      ["lst", "comment-id", ["bs58-encode", "wallet-key"], "vote-bump"],
-                                      ["dict",
-                                       ["str", "accounts"],
-                                       ["dict",
-                                        ["str", "vote"], "vote-addr",
-                                        ["str", "votes"], "votes-addr",
-                                        ["str", "author"], "wallet-key",
-                                        ["str", "voteProgram"], "definition-id",
-                                        ["str", "systemProgram"], "system-program-id"],
-                                     ["str", "signers"],
-                                     ["lst", "wallet-key", "definition-id"]]],
-                                     ["call-program",
-                                      "program",
-                                      ["str", "downvoteNew"],
-                                      ["lst", "comment-id", ["bs58-encode", "wallet-key"], "vote-bump", "votes-bump"],
-                                      ["dict",
-                                       ["str", "accounts"],
-                                       ["dict",
-                                        ["str", "vote"], "vote-addr",
-                                        ["str", "votes"], "votes-addr",
-                                        ["str", "author"], "wallet-key",
-                                        ["str", "voteProgram"], "definition-id",
-                                        ["str", "systemProgram"], "system-program-id"],
-                                     ["str", "signers"],
-                                     ["lst", "wallet-key", "definition-id"]]]]]}
-                    console.error({account})
-/*                    mod_program_def   = JSON.parse(account.program)*/ }
+                    mod_program_def   = JSON.parse(account.program) }
                 catch (e) {
                     console.error('error fetching mod program definition', e) }
 
@@ -188,10 +95,11 @@ const App = () => {
 
     window.initialize_mod_program = initialize_mod_program
 
-    const score_comment = async (site_hash, comment_id) => {
+    const score_comment = async (site_hash, comment_id, comment_text) => {
         return await eval_program(
             mod_program_def.scorer,
             {"site-hash":      site_hash,
+             "comment-text":   comment_text,
              "comment-id":     comment_id,
              "program":        mod_program,
              "program-id":     mod_program_id}) }
@@ -199,9 +107,9 @@ const App = () => {
     const memoized_values = {}
 
     const eval_program = async (program, variables={}) => {
-        console.log('evaling', program)
+        console.log('evaling', program, {...variables})
         const result = await eval_program2(program, variables)
-        console.log('eval', program[0], result, program, variables)
+        console.log('eval', program[0], result, program, {...variables})
         return result }
     
     const eval_program2 = async (program, variables={}) => {
@@ -213,7 +121,10 @@ const App = () => {
             else
                 return variables[program] }
 
-        if (typeof program == "number")
+        if (typeof program == "number" || typeof program == "boolean")
+            return program
+
+        if (program === undefined || program === null)
             return program
 
         switch (fn) {
@@ -237,7 +148,12 @@ const App = () => {
             const value = await eval_program(program[3], variables)
             memoized_values[mm_name] = {value, time: new Date() + mm_length}
             return value 
-              
+
+        case "print":
+            let print_res = await eval_program(program[1], variables)
+            console.log(print_res)
+            return print_res
+            
         case "str":
             return program[1]
 
@@ -260,12 +176,92 @@ const App = () => {
         case "if":
             if (await eval_program(program[1], variables))
                 return await eval_program(program[2], variables)
-            else
+            else if (program.length > 3)
                 return await eval_program(program[3], variables)
-
+            else
+                return null
+            
         case "nth":
-            return await eval_program(program[1])[program[2]]
+            const nth_list = await eval_program(program[1], variables)
+            const nth_n    = await eval_program(program[2], variables)
+            
+            return nth_list[nth_n]
 
+        case "split":
+            const split_str = await eval_program(program[1], variables)
+            const split_by = await eval_program(program[2], variables)
+            return split_str.split(split_by)
+
+        case "replace":
+            const replace_search = await eval_program(program[1], variables)
+            const replace_with = await eval_program(program[2], variables)
+            const replace_str = await eval_program(program[3], variables)
+            return replace_str.replace(replace_search, replace_with)
+
+        case "map":
+            const map_list  = await eval_program(program[3], variables)
+            const map_var   = program[1]
+            const map_fn    = program[2]
+            const map_res   = []
+
+            for (let map_i in map_list) {
+                variables[map_var] = map_list[map_i]
+                map_res.push(await eval_program(map_fn, variables)) }
+
+            return map_res
+            
+        case "regex":
+            return new RegExp(await eval_program(program[1], variables))
+
+        case "to-lower":
+            const to_lower_str = await eval_program(program[1], variables)
+            return to_lower_str.toLowerCase()
+
+        case "str-concat":
+            let str_concat_res = ""
+            for (let i in program) 
+                if (i > 0)
+                    str_concat_res += await eval_program(program[i], variables)
+            return str_concat_res
+
+        case "len":
+            const len_item = await eval_program(program[1], variables)
+            return len_item.length
+            
+        case "range":
+            const range_res   = []
+            const range_start = await eval_program(program[1], variables)
+            const range_end   = await eval_program(program[2], variables)
+            
+            for (let range_i=range_start; range_i < range_end; range_i++)
+                range_res.push(range_i)
+
+            return range_res
+            
+        case "for":
+            const for_var_name  = program[1]
+            const for_items     = await eval_program(program[2], variables)
+            let for_last_res    = null
+            
+            for (let for_i in for_items) {
+                variables[for_var_name] = for_items[for_i]
+                for_last_res = await eval_program(program[3], variables) }
+            
+            return for_last_res
+
+        case "push":
+            let push_list = await eval_program(program[1], variables)
+            let push_val  = await eval_program(program[2], variables)
+
+            push_list.push(push_val)
+            return push_list
+
+        case "member":
+            let member_val   = await eval_program(program[1], variables)
+            let member_list  = await eval_program(program[2], variables)
+
+            return member_list.indexOf(member_val) > -1
+            
         case "bs58-encode":
             return bs58.encode((await eval_program(program[1], variables))._bn.words)
 
@@ -456,8 +452,9 @@ const App = () => {
 
                         for (let i in comments) {
                             const comment = comments[i]
+                            console.log({comment})
                             const id      = bs58.encode(comment.publicKey._bn.words)
-                            const score   = await score_comment(comment.site, id)
+                            const score   = await score_comment(comment.site, id, comment.account.message)
                             scores[id]    = score
                             if (scores[id] == -1)
                                 delete comments[i] }
@@ -472,6 +469,7 @@ const App = () => {
                             data:       {command:     'receive_comments',
                                          comments:  comments,
                                          scores:    scores,
+                                         votestyle: mod_program_def.voting,
                                          site:      message.site,
                                          path:      message.path,
                                          tab_id:    message.tab_id}}) }) }

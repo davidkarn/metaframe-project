@@ -437,7 +437,8 @@ function open_new_comment_popup(selection) {
     node.style.left     = '20vw'
     node.className      = 'metaframe-iframe'
 
-    document.body.appendChild(node) }
+    document.body.appendChild(node)
+    expand_window(node, true) }
 
 function request_comments() {
     const site          = normalize_site(window.location.href)
@@ -453,7 +454,7 @@ function request_comments() {
                path,
                blocks}}) }
 
-function expand_window(iframe) {
+function expand_window(iframe, small) {
     const wrapper                = document.createElement("div")
     wrapper.style.position       = 'fixed'
     wrapper.style.background     = 'rgba(100,100,100,0.1)'
@@ -463,14 +464,16 @@ function expand_window(iframe) {
     wrapper.style.right          = '0'
     wrapper.style.bottom         = '0'
     wrapper.style.zIndex         = 10000
+    wrapper.id = 'metaframe-window-wrapper'
     iframe.style.position        = 'fixed'
-    iframe.style.top             = '10vh'
-    iframe.style.left            = '10vw'
-    iframe.style.right           = '10vw'
-    iframe.style.bottom          = '10vh'
-    iframe.style.width           = '80vw'
-    iframe.style.height          = '80vh'
+    iframe.style.top             = small ? '30vh' : '10vh'
+    iframe.style.left            = small ? '30vw' : '10vw'
+    iframe.style.right           = small ? '30vw' : '10vw'
+    iframe.style.bottom          = small ? '30vh' : '10vh'
+    iframe.style.width           = small ? '40vw' : '80vw'
+    iframe.style.height          = small ? '40vh' : '80vh'
     iframe.style.zIndex          = 100000
+    iframe.id = 'metaframe-window'
     document.body.appendChild(wrapper) }
 
 document.addEventListener('contextmenu', (e) => {
@@ -499,6 +502,11 @@ chrome.runtime.onMessage.addListener( (message, sender) => {
         open_new_comment_popup(get_selection_signature(window.getSelection()))
         break
 
+    case "close-window":
+        document.body.removeChild(document.getElementById('metaframe-window-wrapper'))
+        document.body.removeChild(document.getElementById('metaframe-window'))
+        break;
+        
     case "expand-comment":
         expand_window(document.getElementById(message.id))
         break
@@ -516,6 +524,7 @@ chrome.runtime.onMessage.addListener( (message, sender) => {
                                 node_hash: _comment.nodeHash,
                                 site:      _comment.site,
                                 score:     score,
+                                voting:    message.votestyle,
                                 selection: JSON.parse(_comment.selection),
                                 id:        comment_id} 
             
