@@ -68,7 +68,9 @@ const App = () => {
                                    ["block",
                                     ["set", "up", [".", "scores", ["str", "upCount"]]],
                                     ["set", "down", [".", "scores", ["str", "downCount"]]],
-                                    ["/", ["+", "up", "down"], "up"]],
+                                    ["if", [">", "down", 10],
+                                     -1,
+                                     ["/", ["+", "up", "down"], "up"]]],
                                    0]],
                         "upvote":["block",
                                   ["set", ["vote-addr", "vote-bump"],
@@ -456,16 +458,23 @@ const App = () => {
                             const comment = comments[i]
                             const id      = bs58.encode(comment.publicKey._bn.words)
                             const score   = await score_comment(comment.site, id)
-                            scores[id]    = score }
+                            scores[id]    = score
+                            if (scores[id] == -1)
+                                delete comments[i] }
 
-                        console.log({scores})
-                        
-                        send_to_backend({command:  'forward_comments',
+                        comments = comments.filter(x => x)
+
+                        console.log({scores}, message)
+
+                        send_to_backend({
+                            command:    'send-to-tab',
+                            tab:         message.tab_id,
+                            data:       {command:     'receive_comments',
                                          comments:  comments,
-                                         score:     scores,
+                                         scores:    scores,
                                          site:      message.site,
                                          path:      message.path,
-                                         tab_id:    message.tab_id}) }) }
+                                         tab_id:    message.tab_id}}) }) }
 
             else if (message.command == 'change_domain') 
                 change_watching(message.site)

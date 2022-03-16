@@ -504,17 +504,20 @@ chrome.runtime.onMessage.addListener( (message, sender) => {
         break
         
     case "receive_comments":
-        console.log('reccomments', {message})
         comments_count = message.comments.length
         
         message.comments.map((object) => {
-            const _comment = object.account
-            const comment  = {username:  _comment.username,
-                              message:   _comment.message,
-                              node_hash: _comment.nodeHash,
-                              site:      _comment.site,
-                              selection: JSON.parse(_comment.selection),
-                              id:        bs58.encode(object.publicKey._bn.words)}
+            const comment_id = bs58.encode(object.publicKey._bn.words)
+            const score      = message.scores[comment_id]
+            
+            const _comment   = object.account
+            const comment    = {username:  _comment.username,
+                                message:   _comment.message,
+                                node_hash: _comment.nodeHash,
+                                site:      _comment.site,
+                                score:     score,
+                                selection: JSON.parse(_comment.selection),
+                                id:        comment_id} 
             
             comments[comment.id] = comment
             draw_comment(comment) })

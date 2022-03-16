@@ -226,6 +226,8 @@ const RenderComment = ({wallet, provider, program}) => {
 
                programIdl && __(
                    'p', {},
+                   __('span', {className: 'score'},
+                      comment.score), ' ', 
                    __('span', {onClick:   () => upvote(comment),
                                className: 'upvote'}, 'up'), ' ',
                    __('span', {onClick:   () => downvote(comment),

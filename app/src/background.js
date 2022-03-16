@@ -73,6 +73,7 @@ chrome.runtime.onMessage.addListener((message, sender) => {
         chrome.tabs.sendMessage(
             message.tab_id,
             {command:   'receive_comments',
+             scores:     message.scores,
              comments:   message.comments})
   
     else if (message.command == 'send_to_sol') {
