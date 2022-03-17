@@ -39,6 +39,17 @@ const RenderComment = ({wallet, provider, program}) => {
             {command: 'send-to-tab',
              data:    {command: 'expand-comment',
                        id:      'comment-' + iframe_id}}) }
+
+    const open_subcomment = (subcomment) => {
+        chrome.runtime.sendMessage({command:  "save_comment",
+                                    id:        subcomment.id,
+                                    comment:   subcomment})
+
+
+        chrome.runtime.sendMessage(
+            {command: 'send-to-tab',
+             data:    {command: 'open-subcomment',
+                       id:       subcomment.id}}) }
     
     const close = () => {
         setReplying(false)
@@ -284,7 +295,7 @@ const RenderComment = ({wallet, provider, program}) => {
                                       onClick: () => open_subcomment(subcomment)},
                              "expand ", __('i', {className: 'fa fa-arrow-right'}))))))) }
 
-    console.log({comment, replies})
+    console.log({comment, replies, subcomments})
     
     if (!comment) 
         return __('div', {}, "Loading")
@@ -294,9 +305,12 @@ const RenderComment = ({wallet, provider, program}) => {
                   __('div', {id: 'top-part'},
                      render_comment(comment, comment),
 
-                     replying && replies[comment.id].length && __(
+                     replying && replies[comment.id].length && __( 
                          'div', {id: 'comment-replies'},
-                         __('strong', {}, "Replies"),
+
+                         Object.values(subcomments).length > 0
+                             && __('div', {id: 'subcomments-bg'}),
+
                          
                          replies[comment.id]
                              .map((c) => render_comment(c, comment))),

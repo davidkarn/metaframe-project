@@ -248,6 +248,22 @@ function render_comment(comment) {
     
     return node }
 
+function draw_subcomment(comment_id) {
+    const id            = "comment-" + comment_id
+    const node          = document.createElement("iframe");
+
+    node.id             = id
+    node.src            = chrome.runtime.getURL('/iframe.html#/render-comment?'
+                                                + 'id=' + comment_id)
+    node.name           = comment_id
+    node.className      = 'metaframe-comment-iframe metaframe-iframe'
+
+    document.body.appendChild(node)
+    expand_window(node)
+    
+    return node }
+    
+
 function highlight_selection(string, el, id) {
     const positions  = find_selection(string, el)
     let position     = 0
@@ -505,6 +521,12 @@ chrome.runtime.onMessage.addListener( (message, sender) => {
         
     case "expand-comment":
         expand_window(document.getElementById(message.id))
+        break
+        
+    case "open-subcomment":
+        document.body.removeChild(document.getElementById('metaframe-window-wrapper'))
+        expanded_comment.style = ''
+        draw_subcomment(message.id)
         break
         
     case "receive_comments":

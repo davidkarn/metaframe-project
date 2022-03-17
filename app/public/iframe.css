@@ -184,3 +184,21 @@ input.form-control:focus, input.form-control:focus-visible {
     color: #629cde;
     cursor: pointer;
 }
+
+#comment-replies {
+    border-top: 1px solid #ccc;
+    width:  100%;
+    margin-top: 12px;
+    padding-top: 12px;
+    position: relative;
+}
+
+#subcomments-bg {
+    position: absolute;
+    right: 0;
+    bottom: 0;
+    top: 0;
+    width: calc(100vw - 48em - 24px);
+    background-image: linear-gradient(90deg, rgba(0,0,0,0.05), rgba(0,0,0,0.0) 17%);
+    z-index: -1;
+}
