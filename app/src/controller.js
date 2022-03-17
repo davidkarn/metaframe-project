@@ -410,6 +410,33 @@ const App = () => {
         window.PublicKey      = PublicKey
         window.provider       = provider
 
+        const update_watching_subcomments = () => {
+            fetch_comments([
+                {memcmp: {
+                    offset: 8 + 4,
+                    bytes: bs58.encode(Buffer.from(md5("metaframe")))}},
+                {memcmp:{
+                    offset: 8 + 4 + 32 + 4 + 32 + 4,
+                    bytes: bs58.encode(Buffer.from(open_comment))}}])
+
+                .then(subcomments => {
+                    subcomments = subcomments.map(r => {
+                        return {root_id:   open_comment,
+                                parent_id: r.account.path,
+                                author:    r.account.author,
+                                username:  r.account.username,
+                                id:        r.publicKey.toString(),
+                                selection: JSON.parse(r.account.selection),
+                                message:   r.account.message,
+                                timestamp: new Date(r.account.timestamp * 1000)} })
+                    
+                    send_to_backend({
+                        command:    'send-to-tab',
+                        tab:         watching_tab_id,
+                        data:       {command:     'receive_subcomments',
+                                     subcomments:  subcomments,
+                                     root_id:      open_comment}}) }) }
+        
         const update_watching_replies = () => {
             fetch_replies([
                 {memcmp: {
@@ -499,36 +526,14 @@ const App = () => {
                 change_watching(message.site)
             
             else if (message.command == 'request_replies') {
-                open_comment = message.parent_id
-                watching_tab_id = message.tab_id
+                open_comment      = message.parent_id
+                watching_tab_id   = message.tab_id
                 update_watching_replies() }
 
             else if (message.command == 'request_subcomments') {
-                fetch_comments([
-                    {memcmp: {
-                        offset: 8 + 4,
-                        bytes: bs58.encode(Buffer.from(md5("metaframe")))}},
-                    {memcmp:{
-                        offset: 8 + 4 + 32 + 4 + 32 + 4,
-                        bytes: bs58.encode(Buffer.from(message.root_id))}}])
-
-                    .then(subcomments => {
-                        subcomments = subcomments.map(r => {
-                            return {root_id:   message.root_id,
-                                    parent_id: r.account.path,
-                                    author:    r.account.author,
-                                    username:  r.account.username,
-                                    id:        r.publicKey.toString(),
-                                    selection: JSON.parse(r.account.selection),
-                                    message:   r.account.message,
-                                    timestamp: new Date(r.account.timestamp * 1000)} })
-                        
-                        send_to_backend({
-                            command:    'send-to-tab',
-                            tab:         message.tab_id,
-                            data:       {command:     'receive_subcomments',
-                                         subcomments:  subcomments,
-                                         root_id:      message.root_id}}) }) }
+                open_comment      = message.root_id
+                watching_tab_id   = message.tab_id
+                update_watching_subcomments() }
 
             else if (message.command == 'send_options')
                 get_mod_program(message.idl_address)
@@ -635,8 +640,8 @@ const App = () => {
                                     systemProgram: web3.SystemProgram.programId},
                          signers: [comment]})
 
-                
-            }}
+                update_watching_subcomments()
+                update_watching_comments() }}
 
         send_to_backend({command: 'send_options'})
         

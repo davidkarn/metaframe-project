@@ -136,6 +136,9 @@ const RenderComment = ({wallet, provider, program}) => {
     const send_subcomment = () => {
         const site               = "metaframe"
         const path               = leaving_subcomment // id of parent comment
+
+        set_subcomment_message('')
+        set_subcomment_username('')
         
         chrome.runtime.sendMessage({
             command: 'send_to_sol',
@@ -211,6 +214,16 @@ const RenderComment = ({wallet, provider, program}) => {
         [iframe_id, replies, comment, subcomments])
 
     const render_comment = (comment, root_comment) => {
+        let text = comment.message
+
+        if (subcomments[comment.id] && subcomments[comment.id].length > 0) {
+            const subcomment = subcomments[comment.id][0]
+            
+            text = [text.slice(0, subcomment.selection.start),
+                    __("span", {className: 'mf-hl-selection'},
+                       text.slice(subcomment.selection.start, subcomment.selection.end)),
+                    text.slice(subcomment.selection.end)] }
+            
         return __(
             'div', {className: 'a-comment-wrapper'},
             __('div', {className: 'a-comment',
@@ -223,7 +236,8 @@ const RenderComment = ({wallet, provider, program}) => {
                   dayjs(date).format('MMM D, YYYY h:mm A')),
                
                __('p', {className:  'comment-message',
-                        id:         'message-' + comment.id}, comment.message),
+                        id:         'message-' + comment.id},
+                  text),
 
                programIdl
                && (comment.voting == 'updown' || root_comment.voting == 'updown')
@@ -236,7 +250,8 @@ const RenderComment = ({wallet, provider, program}) => {
                    __('span', {onClick:   () => downvote(comment),
                                className: 'downvote'}, __('i', {className: 'fa fa-arrow-down'})), ' '),
 
-               leaving_subcomment == comment.id && __(
+               leaving_subcomment == comment.id
+               && (!subcomments[comment.id] || subcomments[comment.id].length == 0) && __(
                    'div', {className: 'subcomment-form'}, 
                    __('input', {type:        'text',
                                 className:   'form-control',
@@ -263,7 +278,11 @@ const RenderComment = ({wallet, provider, program}) => {
                           dayjs(subcomment.timestamp).format('MMM D, YYYY h:mm A')),
                        __('p', {className: 'subcomment-message',
                                 id:         'message-' + subcomment.id},
-                          subcomment.message))))) }
+                          subcomment.message),
+                       __('p', {},
+                          __('span', {className: 'expand-link',
+                                      onClick: () => open_subcomment(subcomment)},
+                             "expand ", __('i', {className: 'fa fa-arrow-right'}))))))) }
 
     console.log({comment, replies})
     

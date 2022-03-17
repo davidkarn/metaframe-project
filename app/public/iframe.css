@@ -124,13 +124,14 @@ input.form-control:focus, input.form-control:focus-visible {
 }
 
 .a-comment {
-    max-width: 48em;
+    width: 48em;
 }
 
 #top-part {
     max-height: calc(100% - 60px);
     padding: 12px;
     overflow-y:scroll;
+    overflow-x: hidden;
 }
 
 
@@ -163,4 +164,23 @@ input.form-control:focus, input.form-control:focus-visible {
 #comment-form.expanded #top-part {
     max-height: calc(100% - 60px);
     padding-right: 18px;
+}
+
+
+
+.mf-hl-selection {
+    background-color: #629cde44;
+    border: 3px solid #629cde00;
+    margin-left: -3px;
+    margin-right: -3px;
+}
+
+.a-subcomment {
+    margin-left: 24px;
+}
+
+.expand-link {
+    font-weight: bold;
+    color: #629cde;
+    cursor: pointer;
 }
