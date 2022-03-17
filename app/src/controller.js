@@ -574,7 +574,7 @@ const App = () => {
                      || message.command == 'post_first_comment') {
                 const comment            = web3.Keypair.generate()
                 const is_subcomment      = message.site == 'metaframe'
-                const fnName             = (message.command == 'post_first_comment'
+                let fnName               = (message.command == 'post_first_comment'
                                             ? 'postComment'
                                             : 'postCommentUpdateIndex')
 
@@ -588,13 +588,22 @@ const App = () => {
                 const path      = md5(message.path)
                 const msg       = message.message
 
-
                 const [indexAddr, bump]  = await web3
                       .PublicKey
                       .findProgramAddress(
                           [Buffer.from("commentsIndex"), Buffer.from(site)],
                           program.programId)
 
+                let existing_index
+                try {
+                    existing_index = await program.account
+                        .commentsIndex
+                        .fetch(indexAddr)
+                } catch (e) {}
+
+                if (!existing_index) 
+                    fnName = 'postComment'
+                
                 let result
                 if (fnName == 'postComment')
                     result = await program.rpc.postComment(
@@ -612,14 +621,14 @@ const App = () => {
                          signers: [comment]})
                 else
                     result = await program.rpc[fnName](
-                        message.name,
-                        message.message,
-                        md5(message.site),
-                        md5(message.path),
+                        name,
+                        msg,
+                        site,
+                        path,
                         is_subcomment
                             ? message.node.parent
                             : md5(JSON.stringify(message.node.nodes[message.node.nodes.length - 1])),
-                        JSON.stringify(message.node),
+                        node,
                         {accounts: {comment:       comment.publicKey,
                                     index:         indexAddr,
                                     author:        provider.wallet.publicKey,
