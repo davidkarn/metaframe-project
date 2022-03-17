@@ -31,23 +31,16 @@ const App = () => {
     return __('div', {style: {padding:    '18px',
                               paddingTop: '8px',
                               width:      '180px'}},
-              __('p', {},
-                 __('strong', {}, "Moderation Address")),
-              
-              __('p', {},
-                 __('input', {className: 'form-control',
-                              type:      'text',
-                              value:      moderationAddress,
-                              onChange:  (e) => setModerationAddress(e.target.value)})),
 
               __('p', {},
                  __('strong', {}, "Idl Address")),
               
               __('p', {},
-                 __('input', {className: 'form-control',
-                              type:      'text',
-                              value:      idl_address,
-                              onChange:  (e) => set_idl_address(e.target.value)})),
+                 __('input', {className:   'form-control',
+                              type:        'text',
+                              placeholder: 'eg: /defprogram.json',
+                              value:        idl_address,
+                              onChange:    (e) => set_idl_address(e.target.value)})),
 
               success && __('p', {}, "Updated successfully"),
               

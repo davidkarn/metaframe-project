@@ -1,3 +1,32 @@
+@import url("https://fonts.googleapis.com/css2?family=Lato:ital,wght@0,400;0,700;1,100&display=swap");
+@import url("~normalize.css/normalize.css");
+
+::-webkit-scrollbar-track-piece {
+    background: transparent;
+}
+
+::-webkit-scrollbar {
+    background: transparent;
+    width: 6px;
+    height: 6px;
+    overflow: visible;
+}
+
+::-webkit-scrollbar-thumb {
+    background: transparent;
+}
+
+*:hover::-webkit-scrollbar-thumb {
+    border-radius: 3px;
+    background: rgba(0, 0, 0, 0.2);
+} 
+
+::-webkit-resizer,
+::-webkit-scrollbar-button {
+    display: none;
+}
+
+
 body {
     background: linear-gradient(165deg, #fafafa 50%, #e6e6e6 100%);
     font-size: 12px;
@@ -30,12 +59,12 @@ body {
     margin:0;
     padding:0;
     font-weight: bold;
-    color: #634882;
+    color: #5b91cf;
     cursor: pointer;
 }
     
 .action-btn:first-child {
-    color: #3f74a1;
+    color: #e32064;
 }
 
 .username {
@@ -124,6 +153,11 @@ input.form-control:focus, input.form-control:focus-visible {
 }
 
 
-#comment-form {
+#comment-form.expanded {
     padding: 18px;
+}
+
+
+#comment-form.expanded #top-part {
+    max-height: calc(100% - 78px);
 }

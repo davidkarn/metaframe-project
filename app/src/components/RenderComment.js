@@ -44,7 +44,7 @@ const RenderComment = ({wallet, provider, program}) => {
         setReplying(false)
         chrome.runtime.sendMessage(
             {command: 'send-to-tab',
-             data:    {command: 'close-comment',
+             data:    {command: 'close-window',
                        id:      'comment-' + iframe_id}}) }
 
     const upvote = (comment) => {
@@ -66,7 +66,9 @@ const RenderComment = ({wallet, provider, program}) => {
         expand() }
 
     const send_reply = () => {
-        console.error({comment, parent})
+        set_reply_author('')
+        set_reply_message('')
+        
         chrome.runtime.sendMessage({
             command: 'send_to_sol',
             data:     {command:    'post_reply',
@@ -97,7 +99,6 @@ const RenderComment = ({wallet, provider, program}) => {
     const reply_form = () => {
         return __(
             'div', {className: 'reply-form'},
-            __('p', {}, __('strong', {}, "Reply")),
             __('input', {type:        'text',
                          className:   'form-control',
                          placeholder: 'Author',
@@ -231,9 +232,9 @@ const RenderComment = ({wallet, provider, program}) => {
                    __('span', {className: 'score'},
                       comment.score), ' ', 
                    __('span', {onClick:   () => upvote(comment),
-                               className: 'upvote'}, 'up'), ' ',
+                               className: 'upvote'}, __('i', {className: 'fa fa-arrow-up'})), ' ',
                    __('span', {onClick:   () => downvote(comment),
-                               className: 'downvote'}, 'down'), ' '),
+                               className: 'downvote'}, __('i', {className: 'fa fa-arrow-down'})), ' '),
 
                leaving_subcomment == comment.id && __(
                    'div', {className: 'subcomment-form'}, 
@@ -270,7 +271,7 @@ const RenderComment = ({wallet, provider, program}) => {
         return __('div', {}, "Loading")
     
     else 
-        return __('div', {id: 'comment-form'},
+        return __('div', {id: 'comment-form', className: replying ? 'expanded' : ''},
                   __('div', {id: 'top-part'},
                      render_comment(comment, comment),
 

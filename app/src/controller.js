@@ -53,6 +53,7 @@ const App = () => {
                 mod_program_def_id = definition
                 try {
                     const account     = await mod_program.account.baseAccount.fetch(definition)
+                    console.log({account})
                     mod_program_def   = JSON.parse(account.program) }
                 catch (e) {
                     console.error('error fetching mod program definition', e) }
@@ -60,8 +61,9 @@ const App = () => {
                 if (!mod_program_def) {
                     initialize_mod_program()
                     setTimeout(
-                        () => {
-                            const account     = mod_program.account.baseAccount.fetch(definition)
+                        async () => {
+                            const account     = await mod_program.account.baseAccount.fetch(definition)
+                            console.log({account})
                             mod_program_def   = JSON.parse(account.program) },
                         10000) }}) }
     
@@ -75,7 +77,6 @@ const App = () => {
         return provider }
 
     const x         = Math.random();
-    console.log({x})
     const provider  = getProvider();
     const program   = new Program(idl, programID, provider)
 
@@ -107,9 +108,7 @@ const App = () => {
     const memoized_values = {}
 
     const eval_program = async (program, variables={}) => {
-        console.log('evaling', program, {...variables})
         const result = await eval_program2(program, variables)
-        console.log('eval', program[0], result, program, {...variables})
         return result }
     
     const eval_program2 = async (program, variables={}) => {
@@ -285,7 +284,7 @@ const App = () => {
                                                   variables)
                 let dict_val = await eval_program(program[i + 1],
                                                   variables)
-                console.log({dict_key, dict_val, i}, program)
+
                 dict[dict_key] = dict_val }
             return dict
 
@@ -299,8 +298,6 @@ const App = () => {
                     .account[account_name]
                       .fetch(addr)
                 
-                console.log({pulled_account})
-                
                 return pulled_account }
             
             catch (e) {
@@ -313,7 +310,7 @@ const App = () => {
             let options       = await eval_program(program[4], variables)
 
             args.push(options)
-            console.log('call-p', {mod_program, command, args, options, program, variables})
+
             return await mod_program.rpc[command].apply(
                 mod_program.rpc[command],
                 args)
@@ -325,14 +322,14 @@ const App = () => {
         case "pda":
             const pda_params = await eval_program(program[1], variables)
             const pda_prog   = await eval_program(program[2], variables)
-            console.log('awited', {pda_params, pda_prog})
+
             const pda_res    = await web3
                   .PublicKey
                   .findProgramAddress(
                       pda_params
                           .map(Buffer.from),
                       pda_prog)
-            console.log({pda_res})
+
             return pda_res
 
         case ">":
@@ -392,16 +389,16 @@ const App = () => {
                                 data:     message}) }
     
     const init_app = () => {
-        console.log('initing app')
         let watching       
         let watch_listener
+        let watching_tab_id
+        let watching_path
+        let open_comment
 
         const fetch_comments = (filters) => {
-            console.log('fetching', filters)
             return program.account.comment.all(filters) }
 
         const fetch_replies = (filters) => {
-            console.log('fetching', filters)
             return program.account.reply.all(filters) }
 
         window.fetch_comments = fetch_comments
@@ -413,8 +410,60 @@ const App = () => {
         window.PublicKey      = PublicKey
         window.provider       = provider
 
+        const update_watching_replies = () => {
+            fetch_replies([
+                {memcmp: {
+                    offset: 8 + 4,
+                    bytes: bs58.encode(Buffer.from(open_comment)) }}])
+
+                .then(replies => {
+                    replies = replies.map(r => {
+                        return {parent_id: r.account.to_comment,
+                                author:    r.account.author,
+                                username:  r.account.username,
+                                id:        r.publicKey.toString(),
+                                message:   r.account.message,
+                                timestamp: new Date(r.account.timestamp * 1000)} })
+                    
+                    send_to_backend({
+                        command:    'send-to-tab',
+                        tab:         watching_tab_id,
+                        data:       {command:   'receive_replies',
+                                     replies:    replies,
+                                     parent_id:  open_comment}}) }) }
+        
+        const update_watching_comments = () => {
+            fetch_comments([
+                {memcmp: {
+                    offset: 8 + 4,
+                    bytes: bs58.encode(Buffer.from(md5(watching)
+                                                   /*+ md5(message.path)*/))}}])
+
+                .then(async (comments) => {
+                    const scores = {}
+
+                    for (let i in comments) {
+                        const comment = comments[i]
+                        const id      = bs58.encode(comment.publicKey._bn.words)
+                        const score   = await score_comment(comment.site, id, comment.account.message)
+                        scores[id]    = score
+                        if (scores[id] == -1)
+                            delete comments[i] }
+
+                    comments = comments.filter(x => x)
+
+                    send_to_backend({
+                        command:    'send-to-tab',
+                        tab:         watching_tab_id,
+                        data:       {command:     'receive_comments',
+                                     comments:  comments,
+                                     scores:    scores,
+                                     votestyle: mod_program_def.voting,
+                                     site:      watching,
+                                     path:      watching_path,
+                                     tab_id:    watching_tab_id}}) }) }
+
         const change_watching = async (new_site) => {
-            new_site = new_site.toLowerCase();
             if (new_site == watching) return
 
             if (watch_listener)
@@ -431,73 +480,28 @@ const App = () => {
             watch_listener = connection.onAccountChange(
                 indexAddr,
                 (account_info, context) => {
+                    update_watching_comments()
+                    update_watching_replies()
                     console.log({account_info, context}) }) }
         
         const message_listener = async (_message) => {
             const message = _message.data
-            console.log('got a message', message.command, message)
             
             if (message.command == 'request_comments') {
                 change_watching(message.site)
                 
-                fetch_comments([
-                    {memcmp: {
-                        offset: 8 + 4,
-                        bytes: bs58.encode(Buffer.from(md5(message.site)
-                                                       /*+ md5(message.path)*/))}}])
-
-                    .then(async (comments) => {
-                        console.log('fetched', comments)
-                        const scores = {}
-
-                        for (let i in comments) {
-                            const comment = comments[i]
-                            console.log({comment})
-                            const id      = bs58.encode(comment.publicKey._bn.words)
-                            const score   = await score_comment(comment.site, id, comment.account.message)
-                            scores[id]    = score
-                            if (scores[id] == -1)
-                                delete comments[i] }
-
-                        comments = comments.filter(x => x)
-
-                        console.log({scores}, message)
-
-                        send_to_backend({
-                            command:    'send-to-tab',
-                            tab:         message.tab_id,
-                            data:       {command:     'receive_comments',
-                                         comments:  comments,
-                                         scores:    scores,
-                                         votestyle: mod_program_def.voting,
-                                         site:      message.site,
-                                         path:      message.path,
-                                         tab_id:    message.tab_id}}) }) }
+                watching_tab_id  = message.tab_id
+                watching_path    = message.path
+                
+                update_watching_comments() }
 
             else if (message.command == 'change_domain') 
                 change_watching(message.site)
             
             else if (message.command == 'request_replies') {
-                fetch_replies([
-                    {memcmp: {
-                        offset: 8 + 4,
-                        bytes: bs58.encode(Buffer.from(message.parent_id)) }}])
-
-                    .then(replies => {
-                        replies = replies.map(r => {
-                            return {parent_id: r.account.to_comment,
-                                    author:    r.account.author,
-                                    username:  r.account.username,
-                                    id:        r.publicKey.toString(),
-                                    message:   r.account.message,
-                                    timestamp: new Date(r.account.timestamp * 1000)} })
-                        
-                        send_to_backend({
-                            command:    'send-to-tab',
-                            tab:         message.tab_id,
-                            data:       {command:   'receive_replies',
-                                         replies:    replies,
-                                         parent_id:  message.parent_id}}) }) }
+                open_comment = message.parent_id
+                watching_tab_id = message.tab_id
+                update_watching_replies() }
 
             else if (message.command == 'request_subcomments') {
                 fetch_comments([
@@ -553,7 +557,7 @@ const App = () => {
                           program.programId)
 
                 
-                const result = program.rpc.postReplyUpdateIndex(
+                const result = await program.rpc.postReplyUpdateIndex(
                     message.username,
                     message.message,
                     message.to_comment,
@@ -562,7 +566,9 @@ const App = () => {
                                 index:         indexAddr,
                                 reply:         reply.publicKey,
                                 systemProgram: web3.SystemProgram.programId},
-                     signers: [reply]}) }
+                     signers: [reply]})
+                
+                update_watching_replies() }
             
             else if (message.command == 'post_comment'
                      || message.command == 'post_first_comment') {
@@ -589,22 +595,9 @@ const App = () => {
                           [Buffer.from("commentsIndex"), Buffer.from(site)],
                           program.programId)
 
-                console.log([name,
-                        msg,
-                        site,
-                        path,
-                        node_hash,
-                        node,
-                        bump],
-                        {accounts: {comment:       comment.publicKey,
-                                    index:         indexAddr,
-                                    author:        provider.wallet.publicKey,
-                                    systemProgram: SystemProgram.programId},
-                         signers: [comment]})
-
                 let result
                 if (fnName == 'postComment')
-                    result = program.rpc.postComment(
+                    result = await program.rpc.postComment(
                         name,
                         msg,
                         site,
@@ -617,8 +610,8 @@ const App = () => {
                                     author:        provider.wallet.publicKey,
                                     systemProgram: SystemProgram.programId},
                          signers: [comment]})
-                else (false)
-                    result = program.rpc[fnName](
+                else
+                    result = await program.rpc[fnName](
                         message.name,
                         message.message,
                         md5(message.site),
@@ -632,10 +625,9 @@ const App = () => {
                                     author:        provider.wallet.publicKey,
                                     systemProgram: web3.SystemProgram.programId},
                          signers: [comment]})
-        
-                console.log({result}) }
 
-            console.log('gotmessageinifrmae', message) }
+                
+            }}
 
         send_to_backend({command: 'send_options'})
         
@@ -651,7 +643,13 @@ const App = () => {
                   __(WalletMultiButton)) 
 
     else 
-        return __('div', {}, 'Metaframe') }
+        return __('div', {style: {padding:    '18px',
+                                  fontFamily: 'sans-serif',
+                                  textAlign:  'center'}},
+                  __('img', {src: 'icon.png', style: {width: '64px',
+                                                      display: 'inline-block' }}),
+                  __('p', {}, __('strong', {}, 'Metaframe is running')),
+                  __('p', {}, "Keep this window open to continue using Metaframe")) }
 
 const AppWithProvider = () => {
     return __(ConnectionProvider, {endpoint: "http://127.0.0.1:8899"},

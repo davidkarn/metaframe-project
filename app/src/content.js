@@ -4,10 +4,10 @@ import {normalize_site,
         clean_text,
         query_parameters}        from './utils.js'
 
-const comments = {}
-let comments_count = 0
+const comments       = {}
+let comments_count   = 0
+let expanded_comment
 
-//chrome.runtime.sendMessage({ command: "init-page" });
 function member(ar, value) {
     return ar.indexOf(value) >= 0 }
 
@@ -207,11 +207,9 @@ function class_names(el) {
 let last_right_clicked = false
 
 function draw_comment(comment) {
-    console.log({comment})
-
     const el             = find_el_from_definition(last(comment.selection.nodes))
     const comment_block  = render_comment(comment)
-    console.log({el})
+
     insert_comment_block(el, comment_block, comment)
 
     highlight_selection(comment.selection.text,
@@ -382,7 +380,6 @@ function get_text_bounds(el) {
                 
                 .reduce(
                     (a, b) => {
-                        console.log({root_top, root_left, a, b})
                         return {left:   Math.min(a.left,   root_left + b.left),
                                 right:  Math.max(a.right,  root_left + b.right),
                                 top:    Math.min(a.top,    root_top + b.top),
@@ -401,8 +398,6 @@ const comments_wrapper_for_block = memoize((el) => {
     wrapper.style.left     = (positions.right + 18).toString() + 'px'
     wrapper.style.top      = positions.top.toString() + 'px'
 
-    console.log({wrapper, positions, el}, wrapper.style)
-    
     document.body.appendChild(wrapper)
 
     return wrapper })
@@ -436,6 +431,7 @@ function open_new_comment_popup(selection) {
     node.style.top      = '20vh'
     node.style.left     = '20vw'
     node.className      = 'metaframe-iframe'
+    node.id             = 'metaframe-window'
 
     document.body.appendChild(node)
     expand_window(node, true) }
@@ -444,8 +440,6 @@ function request_comments() {
     const site          = normalize_site(window.location.href)
     const path          = normalize_site_path(window.location.href)
     const blocks        = find_available_blocks(document.body)
-
-    console.log('requesting', site, path, blocks)
 
     chrome.runtime.sendMessage({
         command: 'send_to_sol', 
@@ -465,6 +459,7 @@ function expand_window(iframe, small) {
     wrapper.style.bottom         = '0'
     wrapper.style.zIndex         = 10000
     wrapper.id = 'metaframe-window-wrapper'
+    iframe.style                  = ''
     iframe.style.position        = 'fixed'
     iframe.style.top             = small ? '30vh' : '10vh'
     iframe.style.left            = small ? '30vw' : '10vw'
@@ -473,20 +468,17 @@ function expand_window(iframe, small) {
     iframe.style.width           = small ? '40vw' : '80vw'
     iframe.style.height          = small ? '40vh' : '80vh'
     iframe.style.zIndex          = 100000
-    iframe.id = 'metaframe-window'
+    expanded_comment             = iframe
     document.body.appendChild(wrapper) }
 
 document.addEventListener('contextmenu', (e) => {
-    console.log('clicked', e)
     last_right_clicked = e.target })
 
 window.top.addEventListener('message', (message, sender) => {
-    console.log('topmessage', message.data.command, message, sender)
     if (message.data.forward_to_backend || message.data.command == 'forward_to_backend')
         chrome.runtime.sendMessage(message.data.data)
 
     else if (message.data.command == 'send_comment') {
-        console.log('sendcomment', message.data.id, document.getElementById(message.id))
         
         document
             .getElementById(message.id)
@@ -498,13 +490,17 @@ window.top.addEventListener('message', (message, sender) => {
 chrome.runtime.onMessage.addListener( (message, sender) => {
     switch (message.command) {
     case "comment-on-selection":
-        console.log(get_selection_signature(window.getSelection()))
         open_new_comment_popup(get_selection_signature(window.getSelection()))
         break
 
     case "close-window":
         document.body.removeChild(document.getElementById('metaframe-window-wrapper'))
-        document.body.removeChild(document.getElementById('metaframe-window'))
+        
+        if (document.getElementById('metaframe-window')) 
+            document.body.removeChild(document.getElementById('metaframe-window'))
+        else 
+            expanded_comment.style = ''
+        
         break;
         
     case "expand-comment":
@@ -540,7 +536,6 @@ chrome.runtime.onMessage.addListener( (message, sender) => {
         break
 
     case "send_to_controller":
-        console.log('fwding', message.data, message)
         window.top.postMessage(message.data)
     }
 })

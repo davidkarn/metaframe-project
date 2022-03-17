@@ -28,6 +28,7 @@
     }
     ],
     "icons": {
+        "512": "icon.png"
     },
     "permissions" : ["tabs", "storage", "contextMenus", "unlimitedStorage"],
     "optional_permissions": [],
