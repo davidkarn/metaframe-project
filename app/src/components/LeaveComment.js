@@ -64,7 +64,7 @@ const LeaveComment = ({wallet, provider, program}) => {
                        id:      'comment-' + iframe_id}}) }
 
                                                 
-    return __('div', {id: 'comment-form'},
+    return __('div', {id: 'comment-form', className: 'leave-comment-form'},
               __('input', {type:          'text',
                            placeholder:   'name',
                            value:          name,

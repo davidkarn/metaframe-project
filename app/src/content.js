@@ -535,12 +535,13 @@ chrome.runtime.onMessage.addListener( (message, sender) => {
         message.comments.map((object) => {
             const comment_id = bs58.encode(object.publicKey._bn.words)
             const score      = message.scores[comment_id]
-            
             const _comment   = object.account
+            console.log({_comment, object}, _comment.timestamp,)
             const comment    = {username:  _comment.username,
                                 message:   _comment.message,
                                 node_hash: _comment.nodeHash,
                                 site:      _comment.site,
+                                time:      object.timestamp,
                                 score:     score,
                                 voting:    message.votestyle,
                                 selection: JSON.parse(_comment.selection),

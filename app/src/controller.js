@@ -474,6 +474,9 @@ const App = () => {
                         const id      = bs58.encode(comment.publicKey._bn.words)
                         const score   = await score_comment(comment.site, id, comment.account.message)
                         scores[id]    = score
+
+                        comments[i].timestamp = new Date(comment.account.timestamp * 1000)
+
                         if (scores[id] == -1)
                             delete comments[i] }
 

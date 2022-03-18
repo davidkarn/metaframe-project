@@ -244,7 +244,7 @@ const RenderComment = ({wallet, provider, program}) => {
                   __('strong', {}, comment.username)),
                
                __('p', {className: 'date'},
-                  dayjs(date).format('MMM D, YYYY h:mm A')),
+                  dayjs(comment.time).format('MMM D, YYYY h:mm A')),
                
                __('p', {className:  'comment-message',
                         id:         'message-' + comment.id},
@@ -313,6 +313,7 @@ const RenderComment = ({wallet, provider, program}) => {
 
                          
                          replies[comment.id]
+                             .sort((a, b) => a.time > b.time ? 1 : -1)
                              .map((c) => render_comment(c, comment))),
                      
                      replying && reply_form()),
