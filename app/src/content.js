@@ -208,13 +208,14 @@ let last_right_clicked = false
 
 function draw_comment(comment) {
     const el             = find_el_from_definition(last(comment.selection.nodes))
-    const comment_block  = render_comment(comment)
 
-    insert_comment_block(el, comment_block, comment)
+    if (el) {
+        const comment_block  = render_comment(comment)
 
-    highlight_selection(comment.selection.text,
-                        el,
-                        comment.id)}
+        insert_comment_block(el, comment_block, comment)
+        highlight_selection(comment.selection.text,
+                            el,
+                            comment.id) }}
 
 function find_el_from_definition(definition) {
     let candidates = document.querySelectorAll(
@@ -226,27 +227,33 @@ function find_el_from_definition(definition) {
 
     for (var i in candidates) {
         let candidate = candidates[i]
-        
+        console.log('test', candidates[i], clean_text(candidate.innerText || ''), definition.text)
         if (clean_text(candidate.innerText || '') == definition.text)
             return candidate }
 
     return null }
 
+function has_rendered(comment) {
+    const id      = "comment-" + comment.id
+
+    return !!document.querySelector('#' + id) }
+
 function render_comment(comment) {
-    const id            = "comment-" + comment.id
-    const node          = document.createElement("iframe");
+    if (!has_rendered(comment)) {
+        const id            = "comment-" + comment.id
+        const node          = document.createElement("iframe");
 
-    chrome.runtime.sendMessage({command:  "save_comment",
-                                id:        comment.id,
-                                comment:   comment})
+        chrome.runtime.sendMessage({command:  "save_comment",
+                                    id:        comment.id,
+                                    comment:   comment})
 
-    node.id             = id
-    node.src            = chrome.runtime.getURL('/iframe.html#/render-comment?'
-                                                + 'id=' + comment.id)
-    node.name           = comment.id
-    node.className      = 'metaframe-comment-iframe metaframe-iframe'
-    
-    return node }
+        node.id             = id
+        node.src            = chrome.runtime.getURL('/iframe.html#/render-comment?'
+                                                    + 'id=' + comment.id)
+        node.name           = comment.id
+        node.className      = 'metaframe-comment-iframe metaframe-iframe'
+        
+        return node }}
 
 function draw_subcomment(comment_id) {
     const id            = "comment-" + comment_id
@@ -301,9 +308,13 @@ function add_selection(node, start, end, id) {
         outer_span.appendChild(inner_span)
         outer_span.appendChild(
             document.createTextNode(node_text.slice(end)))
+
+        if (node.parentElement) {
+            node.parentElement.insertBefore(outer_span, node.nextSibling)
+            node.parentElement.removeChild(node) }
         
-        node.parentElement.insertBefore(outer_span, node.nextSibling)
-        node.parentElement.removeChild(node) }
+        else {
+            console.log('noparenteelement, node'); }}
 
     else {
         let parent_node       = node.parentElement
@@ -530,6 +541,7 @@ chrome.runtime.onMessage.addListener( (message, sender) => {
         break
         
     case "receive_comments":
+        console.log('rec3eiving', {message})
         comments_count = message.comments.length
         
         message.comments.map((object) => {

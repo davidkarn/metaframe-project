@@ -54,7 +54,8 @@ const App = () => {
                 try {
                     const account     = await mod_program.account.baseAccount.fetch(definition)
                     console.log({account})
-                    mod_program_def   = JSON.parse(account.program) }
+                    mod_program_def   = JSON.parse(account.program)
+                    window.mod_program_def = mod_program_def }
                 catch (e) {
                     console.error('error fetching mod program definition', e) }
 
@@ -411,13 +412,14 @@ const App = () => {
         window.provider       = provider
 
         const update_watching_subcomments = () => {
-            fetch_comments([
-                {memcmp: {
-                    offset: 8 + 4,
-                    bytes: bs58.encode(Buffer.from(md5("metaframe")))}},
-                {memcmp:{
-                    offset: 8 + 4 + 32 + 4 + 32 + 4,
-                    bytes: bs58.encode(Buffer.from(open_comment))}}])
+            if (open_comment)
+                fetch_comments([
+                    {memcmp: {
+                        offset: 8 + 4,
+                        bytes: bs58.encode(Buffer.from(md5("metaframe")))}},
+                    {memcmp:{
+                        offset: 8 + 4 + 32 + 4 + 32 + 4,
+                        bytes: bs58.encode(Buffer.from(open_comment))}}])
 
                 .then(subcomments => {
                     subcomments = subcomments.map(r => {
@@ -438,10 +440,11 @@ const App = () => {
                                      root_id:      open_comment}}) }) }
         
         const update_watching_replies = () => {
-            fetch_replies([
-                {memcmp: {
-                    offset: 8 + 4,
-                    bytes: bs58.encode(Buffer.from(open_comment)) }}])
+            if (open_comment)
+                fetch_replies([
+                    {memcmp: {
+                        offset: 8 + 4,
+                        bytes: bs58.encode(Buffer.from(open_comment)) }}])
 
                 .then(replies => {
                     replies = replies.map(r => {
@@ -460,11 +463,12 @@ const App = () => {
                                      parent_id:  open_comment}}) }) }
         
         const update_watching_comments = () => {
-            fetch_comments([
-                {memcmp: {
-                    offset: 8 + 4,
-                    bytes: bs58.encode(Buffer.from(md5(watching)
-                                                   /*+ md5(message.path)*/))}}])
+            if (watching)
+                fetch_comments([
+                    {memcmp: {
+                        offset: 8 + 4,
+                        bytes: bs58.encode(Buffer.from(md5(watching)
+                                                       /*+ md5(message.path)*/))}}])
 
                 .then(async (comments) => {
                     const scores = {}
@@ -488,7 +492,7 @@ const App = () => {
                         data:       {command:     'receive_comments',
                                      comments:  comments,
                                      scores:    scores,
-                                     votestyle: mod_program_def.voting,
+                                     votestyle: mod_program_def && mod_program_def.voting,
                                      site:      watching,
                                      path:      watching_path,
                                      tab_id:    watching_tab_id}}) }) }
@@ -554,7 +558,7 @@ const App = () => {
                     "system-program-id": web3.SystemProgram.programId}
                 
                 await eval_program(vote_program, parameters) }                
-        
+            
             else if (message.command == 'post_reply') {
                 const reply  = web3.Keypair.generate()
 
@@ -607,10 +611,27 @@ const App = () => {
                     existing_index = await program.account
                         .commentsIndex
                         .fetch(indexAddr)
-                } catch (e) {}
+                } catch (e) {console.error('error', e, indexAddr)}
 
                 if (!existing_index) 
                     fnName = 'postComment'
+                else
+                    fnName = 'postCommentUpdateIndex'
+                
+                console.log({existing_index, indexAddr, fnName},
+                            [name,
+                             msg,
+                             site,
+                             path,
+                             is_subcomment
+                             ? message.node.parent
+                             : md5(JSON.stringify(message.node.nodes[message.node.nodes.length - 1])),
+                             node,
+                             {accounts: {comment:       comment.publicKey,
+                                         index:         indexAddr,
+                                         author:        provider.wallet.publicKey,
+                                         systemProgram: web3.SystemProgram.programId},
+                              signers: [comment]}])
                 
                 let result
                 if (fnName == 'postComment')
