@@ -416,7 +416,7 @@ function get_text_bounds(el) {
                      top:    rect.bottom + root_top,
                      bottom: rect.top + root_top})) }
 
-const comments_wrapper_for_block = memoize((el) => {
+const comments_wrapper_for_block = ((el) => {
     const wrapper   = document.createElement('div')
     const positions = get_text_bounds(el)
     
