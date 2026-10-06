@@ -11,4 +11,9 @@ The vision of metaframe is to:
 1. Provide a way to read comments on any article, replacing the experience of someone reading whatever a news organization decides to show them with the experience of someone interacting with a broad range of perspectives on any content they are viewing.
 2. Provide decentralized moderation platform that removes the catch-22 of a social platform either being responsible for every bit of content they dont moderate, or on the other hand being held responsible any time they decide some content needs to be removed. Decentralization avoids this problem by offloading the responsibility for moderation to a multitude of other communities and authorities.
 
-To run it requires your hosts file to point metaframe.io to localhost, and to run an https server in the app/public directory, after running npm and webpack and deploying the anchor code to localhost. Your browser should also load the public folder as an unpacked extension. Moderation programs are currently chosen by clicking the metaframe logo in the google chrome navbar, and entering the url for the idl.json file of that moderation program. 
+To run it requires your hosts file to point metaframe.io to localhost, and to run an https server in the app/public directory, after running npm and webpack and deploying the anchor code to localhost. Your browser should also load the public folder as an unpacked extension. Moderation programs are currently chosen by clicking the metaframe logo in the google chrome navbar, and entering the url for the idl.json file of that moderation program.   
+
+
+<img width="1624" height="898" alt="Screenshot 2026-10-06 at 4 16 54 PM" src="https://github.com/user-attachments/assets/93f67dc4-cd56-4abc-9b7b-5ae348c0347d" />  
+
+<img width="1607" height="912" alt="Screenshot 2026-10-06 at 4 17 04 PM" src="https://github.com/user-attachments/assets/04318e5a-8f02-47e1-a6b4-a779460f454d" />
